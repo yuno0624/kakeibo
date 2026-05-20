@@ -1,0 +1,1839 @@
+
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>家計管理ダッシュボード｜ユノさん用</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --panel-2: #f0f3f8;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #d8dee9;
+      --main: #2563eb;
+      --main-dark: #1d4ed8;
+      --ok: #15803d;
+      --ok-bg: #dcfce7;
+      --warn: #b45309;
+      --warn-bg: #fef3c7;
+      --bad: #b91c1c;
+      --bad-bg: #fee2e2;
+      --chip: #e8eefb;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --focus: 0 0 0 4px rgba(37, 99, 235, .18);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    button,
+    input,
+    select,
+    textarea { font: inherit; }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: .75rem 1rem;
+      background: var(--main);
+      color: #fff;
+      font-weight: 700;
+      transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
+    }
+    button:hover { background: var(--main-dark); transform: translateY(-1px); }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: none; box-shadow: var(--focus); }
+    button.secondary { background: #e5e7eb; color: #111827; }
+    button.secondary:hover { background: #d1d5db; }
+    button.ghost { background: transparent; color: var(--main); border: 1px solid var(--line); }
+    button.ghost:hover { background: #eff6ff; }
+    button.danger { background: #dc2626; }
+    button.danger:hover { background: #b91c1c; }
+    button.small { padding: .45rem .7rem; font-size: .86rem; }
+    button.full { width: 100%; }
+
+    .app {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    header.hero {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: 1fr;
+      padding: 1.2rem;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #eff6ff, #ffffff 50%, #f8fafc);
+      box-shadow: var(--shadow);
+      margin-bottom: 1rem;
+    }
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(1.45rem, 4vw, 2.2rem);
+      letter-spacing: .02em;
+    }
+    .hero p { margin: .3rem 0 0; color: var(--muted); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+    .autosave {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .45rem .7rem;
+      border-radius: 999px;
+      background: var(--ok-bg);
+      color: var(--ok);
+      font-weight: 800;
+      font-size: .88rem;
+    }
+    .autosave::before {
+      content: "";
+      width: .6rem;
+      height: .6rem;
+      border-radius: 50%;
+      background: currentColor;
+      display: inline-block;
+    }
+
+    nav.tabs {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      gap: .45rem;
+      overflow-x: auto;
+      padding: .65rem .2rem .85rem;
+      margin: 0 0 .6rem;
+      background: rgba(246, 247, 251, .92);
+      backdrop-filter: blur(10px);
+      scrollbar-width: thin;
+    }
+    .tab-btn {
+      flex: 0 0 auto;
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, .04);
+    }
+    .tab-btn.active {
+      background: var(--main);
+      color: #fff;
+      border-color: var(--main);
+    }
+
+    section.view { display: none; }
+    section.view.active { display: block; animation: fade .18s ease-out; }
+    @keyframes fade { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .grid { display: grid; gap: 1rem; }
+    .grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(216, 222, 233, .85);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+    }
+    .card h2, .card h3 {
+      margin: 0 0 .75rem;
+      line-height: 1.35;
+    }
+    .card h2 { font-size: 1.2rem; }
+    .card h3 { font-size: 1.02rem; }
+    .muted { color: var(--muted); }
+    .small-text { font-size: .88rem; }
+    .tiny { font-size: .76rem; }
+    .right { text-align: right; }
+    .money {
+      font-size: clamp(1.3rem, 4vw, 2rem);
+      font-weight: 900;
+      letter-spacing: .01em;
+      line-height: 1.2;
+    }
+    .submoney { font-weight: 800; font-size: 1.05rem; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      border-radius: 999px;
+      padding: .24rem .58rem;
+      font-size: .78rem;
+      font-weight: 800;
+      white-space: nowrap;
+      background: var(--chip);
+      color: #1e3a8a;
+    }
+    .pill.ok { background: var(--ok-bg); color: var(--ok); }
+    .pill.warn { background: var(--warn-bg); color: var(--warn); }
+    .pill.bad { background: var(--bad-bg); color: var(--bad); }
+
+    .summary-card {
+      min-height: 132px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: .5rem;
+    }
+    .summary-top { display: flex; justify-content: space-between; gap: .75rem; align-items: start; }
+
+    .notice {
+      border-radius: var(--radius-sm);
+      padding: .8rem .9rem;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+    .notice.ok { border-color: #86efac; background: var(--ok-bg); color: #14532d; }
+    .notice.warn { border-color: #fcd34d; background: var(--warn-bg); color: #78350f; }
+    .notice.bad { border-color: #fca5a5; background: var(--bad-bg); color: #7f1d1d; }
+    .notice strong { display: block; margin-bottom: .2rem; }
+
+    label { display: block; font-weight: 800; margin-bottom: .3rem; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: .72rem .78rem;
+      background: #fff;
+      color: var(--text);
+    }
+    textarea { min-height: 92px; resize: vertical; }
+    .field { display: grid; gap: .3rem; }
+    .form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+    .form-row.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .form-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .9rem; }
+
+    .quick-buttons { display: flex; flex-wrap: wrap; gap: .45rem; }
+    .quick-buttons button { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; }
+    .quick-buttons button:hover, .quick-buttons button.active { background: #4338ca; color: #fff; }
+    .quick-buttons button.warn { background: var(--warn-bg); color: var(--warn); border-color: #fcd34d; }
+    .quick-buttons button.warn:hover, .quick-buttons button.warn.active { background: #f59e0b; color: #111827; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: .7rem .55rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { text-align: left; color: #374151; font-size: .86rem; background: #f9fafb; position: sticky; top: 0; z-index: 2; }
+    tr:hover td { background: #f8fafc; }
+    .table-wrap { overflow-x: auto; overflow-y: visible; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; }
+    .table-wrap table { min-width: 760px; table-layout: fixed; }
+    .table-wrap th, .table-wrap td { overflow-wrap: anywhere; word-break: break-word; }
+    #fixedTable .table-wrap table { min-width: 900px; }
+    #fixedTable th:nth-child(1), #fixedTable td:nth-child(1) { width: 24%; }
+    #fixedTable th:nth-child(2), #fixedTable td:nth-child(2) { width: 13%; }
+    #fixedTable th:nth-child(3), #fixedTable td:nth-child(3) { width: 13%; }
+    #fixedTable th:nth-child(4), #fixedTable td:nth-child(4) { width: 13%; }
+    #fixedTable th:nth-child(5), #fixedTable td:nth-child(5) { width: 27%; }
+    #fixedTable th:nth-child(6), #fixedTable td:nth-child(6) { width: 10%; }
+    .table-meta { margin: .35rem 0 .7rem; color: var(--muted); font-size: .86rem; }
+    .amount-expense { color: var(--bad); font-weight: 800; }
+    .amount-income { color: var(--ok); font-weight: 800; }
+
+    .progress {
+      height: .8rem;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress > span {
+      display: block;
+      height: 100%;
+      width: var(--w, 0%);
+      background: var(--main);
+    }
+    .progress.warn > span { background: #f59e0b; }
+    .progress.bad > span { background: #dc2626; }
+
+    .split { display: flex; justify-content: space-between; gap: .7rem; align-items: baseline; }
+    .divider { height: 1px; background: var(--line); margin: 1rem 0; }
+    .kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: #111827;
+      color: #fff;
+      border-radius: 7px;
+      padding: .1rem .35rem;
+      font-size: .8em;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--muted);
+    }
+
+    dialog {
+      border: none;
+      border-radius: 22px;
+      padding: 0;
+      width: min(680px, calc(100vw - 1.5rem));
+      box-shadow: 0 30px 80px rgba(15, 23, 42, .25);
+    }
+    dialog::backdrop { background: rgba(15, 23, 42, .5); }
+    .dialog-inner { padding: 1rem; }
+
+    .print-only { display: none; }
+
+    @media (max-width: 900px) {
+      .grid.cols-4, .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; }
+      .form-row, .form-row.three { grid-template-columns: 1fr; }
+      th { position: static; }
+      .hero-actions { align-items: stretch; }
+      .hero-actions button { flex: 1 1 auto; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      nav.tabs, .hero-actions, .no-print, button, input, select, textarea { display: none !important; }
+      header.hero, .card { box-shadow: none; border-color: #cbd5e1; break-inside: avoid; }
+      section.view { display: block !important; margin-bottom: 1rem; }
+      .print-only { display: block; }
+      .app { max-width: none; padding: 0; }
+    }
+
+    /* GitHub同期設定：既存画面を崩さず、設定ページに追加するための独立スタイル */
+    details.sync-details {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+      padding: 1rem;
+    }
+    details.sync-details > summary {
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #0f172a;
+      list-style-position: inside;
+    }
+    .sync-panel {
+      margin-top: 1rem;
+      border: 1px solid #cfe0f2;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, #eef8ff 0%, #fffdf7 100%);
+      padding: 1rem;
+    }
+    .sync-panel .field input[type="password"],
+    .sync-panel .field input[type="text"] {
+      font-family: inherit;
+    }
+    .sync-check {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      margin: .8rem 0;
+      font-weight: 750;
+      color: var(--muted);
+    }
+    .sync-check input { width: 1.1rem; height: 1.1rem; }
+    .sync-status-box {
+      margin-top: 1rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: #fff;
+      padding: .9rem;
+    }
+    .sync-status-head {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: .65rem;
+      margin-bottom: .55rem;
+    }
+    .sync-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: .35rem .75rem;
+      font-size: .9rem;
+      font-weight: 800;
+      background: var(--chip);
+      color: #334155;
+    }
+    .sync-badge.ok { background: #ccfbf1; color: #0f766e; }
+    .sync-badge.warn { background: var(--warn-bg); color: #92400e; }
+    .sync-badge.bad { background: var(--bad-bg); color: #991b1b; }
+    .sync-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .5rem 1rem;
+      color: var(--muted);
+      font-size: .95rem;
+      word-break: break-word;
+    }
+    .sync-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: #475569;
+    }
+    .sync-note-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .8rem;
+      margin-top: .9rem;
+    }
+    .sync-mini-note {
+      border: 1px dashed var(--line);
+      border-radius: var(--radius-sm);
+      padding: .8rem;
+      background: rgba(255, 255, 255, .7);
+      color: var(--muted);
+      font-size: .92rem;
+    }
+    .sync-file-warning {
+      border-color: #fed7aa;
+      background: #fff7ed;
+      color: #7c2d12;
+    }
+    @media (max-width: 720px) {
+      .sync-meta, .sync-note-grid { grid-template-columns: 1fr; }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="hero">
+      <div>
+        <h1>家計管理ダッシュボード</h1>
+        <p>VIEWカード引落を守りながら、今月あといくら安全に使えるかを見るための1ファイルHTMLです。</p>
+      </div>
+      <div class="hero-actions no-print">
+        <span class="autosave" id="saveStatus">自動保存中</span>
+        <button type="button" onclick="App.exportJSON()">JSONバックアップ</button>
+        <button type="button" class="secondary" onclick="App.exportCSV()">CSV出力</button>
+        <button type="button" class="ghost" onclick="window.print()">月次レポート印刷</button>
+      </div>
+    </header>
+
+    <nav class="tabs no-print" aria-label="画面切り替え">
+      <button class="tab-btn active" data-tab="dashboard" type="button">ダッシュボード</button>
+      <button class="tab-btn" data-tab="input" type="button">かんたん入力</button>
+      <button class="tab-btn" data-tab="history" type="button">履歴一覧</button>
+      <button class="tab-btn" data-tab="viewcard" type="button">VIEWカード</button>
+      <button class="tab-btn" data-tab="assets" type="button">資産管理</button>
+      <button class="tab-btn" data-tab="fixed" type="button">固定費・保険</button>
+      <button class="tab-btn" data-tab="reports" type="button">3か月平均</button>
+      <button class="tab-btn" data-tab="settings" type="button">設定・バックアップ</button>
+    </nav>
+
+    <main>
+      <section id="dashboard" class="view active">
+        <div class="grid cols-4" id="summaryCards"></div>
+        <div class="grid cols-2" style="margin-top:1rem;">
+          <div class="card">
+            <h2>安全判定</h2>
+            <div id="safetyNotices" class="grid"></div>
+          </div>
+          <div class="card">
+            <h2>今月の趣味費メーター</h2>
+            <div class="split"><span>使用済み</span><strong id="hobbySpentLabel">0円</strong></div>
+            <div class="progress" id="hobbyProgress" style="margin:.5rem 0 .75rem;"><span></span></div>
+            <div id="hobbyAdvice" class="notice"></div>
+          </div>
+        </div>
+        <div class="grid cols-2" style="margin-top:1rem;">
+          <div class="card">
+            <h2>カテゴリ別・今月支出</h2>
+            <div id="categorySummary"></div>
+          </div>
+          <div class="card">
+            <h2>最近の入力</h2>
+            <div id="recentTransactions"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="input" class="view">
+        <div class="grid cols-2">
+          <div class="card">
+            <h2>かんたん入力</h2>
+            <p class="muted small-text">基本は「金額」と「使途」だけ。日付・種別・支払元・カテゴリは自動で入ります。違う時だけ直してください。</p>
+            <form id="txForm">
+              <div class="form-row">
+                <div class="field">
+                  <label for="amount">金額</label>
+                  <input id="amount" type="number" inputmode="numeric" min="0" step="1" placeholder="例：980" required />
+                </div>
+                <div class="field">
+                  <label for="description">使途</label>
+                  <input id="description" type="text" placeholder="例：Amazon本、ダイソー、薬" required />
+                </div>
+              </div>
+
+              <div class="field" style="margin-top:.9rem;">
+                <label>分類ボタン</label>
+                <div class="quick-buttons" id="quickButtons"></div>
+              </div>
+
+              <div class="form-row three" style="margin-top:.9rem;">
+                <div class="field">
+                  <label for="date">日付</label>
+                  <input id="date" type="date" />
+                </div>
+                <div class="field">
+                  <label for="type">種別</label>
+                  <select id="type">
+                    <option value="支出">支出</option>
+                    <option value="収入">収入</option>
+                    <option value="振替">振替</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="source">支払元・入金先</label>
+                  <select id="source"></select>
+                </div>
+              </div>
+
+              <div class="form-row" style="margin-top:.9rem;">
+                <div class="field">
+                  <label for="category">カテゴリ</label>
+                  <select id="category"></select>
+                </div>
+                <div class="field">
+                  <label for="memo">メモ</label>
+                  <input id="memo" type="text" placeholder="任意。後で見返す用" />
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit">登録する</button>
+                <button type="button" class="secondary" onclick="App.resetForm()">入力をリセット</button>
+                <button type="button" class="ghost" onclick="App.applyAutoCategory()">使途から自動分類</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2>入力後の見込み</h2>
+            <div id="previewPanel" class="grid"></div>
+            <div class="divider"></div>
+            <h3>自動分類キーワード</h3>
+            <div id="keywordList" class="small-text"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="history" class="view">
+        <div class="card">
+          <div class="split" style="align-items:center; flex-wrap:wrap;">
+            <div>
+              <h2>履歴一覧</h2>
+              <p class="muted small-text">入力した支出・収入・振替を確認します。不要な行は削除できます。</p>
+            </div>
+            <div class="form-row" style="min-width:min(520px,100%);">
+              <div class="field">
+                <label for="historyMonth">月で絞り込み</label>
+                <input id="historyMonth" type="month" />
+              </div>
+              <div class="field">
+                <label for="historyCategory">カテゴリ</label>
+                <select id="historyCategory"></select>
+              </div>
+            </div>
+          </div>
+          <div id="historyTable" style="margin-top:1rem;"></div>
+        </div>
+      </section>
+
+      <section id="viewcard" class="view">
+        <div class="grid cols-2">
+          <div class="card">
+            <h2>VIEWカード管理</h2>
+            <div id="viewStatus" class="grid"></div>
+          </div>
+          <div class="card">
+            <h2>次回引落設定</h2>
+            <form id="viewForm">
+              <div class="form-row">
+                <div class="field">
+                  <label for="viewDueDate">次回引落日</label>
+                  <input id="viewDueDate" type="date" />
+                </div>
+                <div class="field">
+                  <label for="viewDueAmount">次回引落額</label>
+                  <input id="viewDueAmount" type="number" min="0" step="1" />
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="submit">VIEW設定を保存</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="card" style="margin-top:1rem;">
+          <h2>VIEWカード利用メモ</h2>
+          <p class="muted small-text">支払元を「VIEWカード」にして登録した支出です。普通預金からは即時には引かず、カード利用として集計します。</p>
+          <div id="viewCardTxTable"></div>
+        </div>
+      </section>
+
+      <section id="assets" class="view">
+        <div class="grid cols-2">
+          <div class="card">
+            <h2>資産管理</h2>
+            <div id="assetPanel" class="grid"></div>
+          </div>
+          <div class="card">
+            <h2>資産の初期値を変更</h2>
+            <form id="assetForm">
+              <div class="form-row">
+                <div class="field">
+                  <label for="ordinaryBase">普通預金</label>
+                  <input id="ordinaryBase" type="number" min="0" step="1" />
+                </div>
+                <div class="field">
+                  <label for="savingsBase">貯金</label>
+                  <input id="savingsBase" type="number" min="0" step="1" />
+                </div>
+              </div>
+              <div class="form-row" style="margin-top:.9rem;">
+                <div class="field">
+                  <label for="investmentBase">投資信託評価額</label>
+                  <input id="investmentBase" type="number" min="0" step="1" />
+                </div>
+                <div class="field">
+                  <label for="investmentMonthly">毎月の投信積立額</label>
+                  <input id="investmentMonthly" type="number" min="0" step="1" />
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="submit">資産設定を保存</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section id="fixed" class="view">
+        <div class="grid cols-2">
+          <div class="card">
+            <h2>固定費・保険の登録</h2>
+            <form id="fixedForm">
+              <div class="form-row">
+                <div class="field">
+                  <label for="fixedName">名称</label>
+                  <input id="fixedName" type="text" placeholder="例：スマホ代、Amazon、会社の保険料" required />
+                </div>
+                <div class="field">
+                  <label for="fixedAmount">月額</label>
+                  <input id="fixedAmount" type="number" min="0" step="1" required />
+                </div>
+              </div>
+              <div class="form-row" style="margin-top:.9rem;">
+                <div class="field">
+                  <label for="fixedCategory">分類</label>
+                  <select id="fixedCategory">
+                    <option value="通信費">通信費</option>
+                    <option value="サブスク">サブスク</option>
+                    <option value="保険">保険</option>
+                    <option value="固定費">固定費</option>
+                    <option value="その他">その他</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="fixedStatus">状態</label>
+                  <select id="fixedStatus">
+                    <option value="継続">継続</option>
+                    <option value="見直し">見直し</option>
+                    <option value="解約候補">解約候補</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field" style="margin-top:.9rem;">
+                <label for="fixedNote">メモ</label>
+                <textarea id="fixedNote" placeholder="保障内容、必要性、見直し理由など"></textarea>
+              </div>
+              <div class="form-actions">
+                <button type="submit">固定費を追加</button>
+              </div>
+            </form>
+          </div>
+          <div class="card">
+            <h2>固定費サマリー</h2>
+            <div id="fixedSummary" class="grid"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:1rem;">
+          <h2>固定費・保険一覧</h2>
+          <div id="fixedTable"></div>
+        </div>
+      </section>
+
+      <section id="reports" class="view">
+        <div class="grid cols-2">
+          <div class="card">
+            <h2>直近3か月平均</h2>
+            <div id="avgPanel" class="grid"></div>
+          </div>
+          <div class="card">
+            <h2>月別支出</h2>
+            <div id="monthlyPanel"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:1rem;">
+          <h2>カテゴリ別平均</h2>
+          <div id="categoryAvgPanel"></div>
+        </div>
+      </section>
+
+      <section id="settings" class="view">
+        <div class="grid cols-2">
+          <div class="card">
+            <h2>基本設定</h2>
+            <form id="settingsForm">
+              <div class="form-row">
+                <div class="field">
+                  <label for="hobbyLimit">趣味費上限</label>
+                  <input id="hobbyLimit" type="number" min="0" step="1" />
+                </div>
+                <div class="field">
+                  <label for="defaultSource">通常の支払元</label>
+                  <select id="defaultSource"></select>
+                </div>
+              </div>
+              <div class="field" style="margin-top:.9rem;">
+                <label for="userNote">運用メモ</label>
+                <textarea id="userNote" placeholder="自分用ルール、今月の注意など"></textarea>
+              </div>
+              <div class="form-actions">
+                <button type="submit">設定を保存</button>
+              </div>
+            </form>
+          </div>
+          <div class="card">
+            <h2>バックアップ・復元</h2>
+            <p class="muted small-text">自動保存はブラウザ内保存です。念のため、週1回はJSONバックアップを保存してください。</p>
+            <div class="form-actions">
+              <button type="button" onclick="App.exportJSON()">JSONバックアップ</button>
+              <button type="button" class="secondary" onclick="App.exportCSV()">CSV出力</button>
+              <button type="button" class="ghost" onclick="document.getElementById('importFile').click()">JSONを復元</button>
+              <input id="importFile" type="file" accept="application/json,.json" style="display:none" />
+            </div>
+            <div class="divider"></div>
+            <button type="button" class="danger" onclick="App.confirmResetAll()">全データを初期化</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1rem;" id="githubSyncCard">
+          <details class="sync-details" id="githubSyncDetails">
+            <summary>GitHub同期設定（PC ↔ Android）</summary>
+            <p class="muted small-text">PCとAndroidで同じGist ID・同じ同期ファイル名・同じトークンを設定すると同期できます。トークンはこの端末のlocalStorageに保存します。読み込み時は、指定したファイル名と完全一致するJSONだけを読み込みます。</p>
+
+            <div class="sync-panel">
+              <div class="field">
+                <label for="githubToken">GitHub Personal Access Token</label>
+                <div class="form-row" style="grid-template-columns: minmax(0, 1fr) auto; align-items:end;">
+                  <input id="githubToken" type="password" autocomplete="off" placeholder="ghp_ または github_pat_ から始まるトークン" />
+                  <button type="button" class="ghost" onclick="App.toggleGitHubTokenVisibility()">表示/非表示</button>
+                </div>
+              </div>
+
+              <div class="form-row" style="margin-top:.9rem;">
+                <div class="field">
+                  <label for="githubGistId">Gist ID</label>
+                  <input id="githubGistId" type="text" autocomplete="off" placeholder="例：1bf80638f75bc23d92cd51f8a1e3de6b" />
+                </div>
+                <div class="field">
+                  <label for="githubFileName">同期ファイル名</label>
+                  <input id="githubFileName" type="text" autocomplete="off" placeholder="kakei-dashboard.json" />
+                </div>
+              </div>
+
+              <label class="sync-check" for="githubAutoSync">
+                <input id="githubAutoSync" type="checkbox" />
+                <span>30秒ごとに自動同期する</span>
+              </label>
+              <p class="muted small-text">自動同期はGitHubへ保存します。GitHubからの読み込みは、誤上書きを避けるため手動ボタンだけにしています。</p>
+
+              <div class="form-actions">
+                <button type="button" onclick="App.saveGitHubSyncSettings()">同期設定を保存</button>
+                <button type="button" class="secondary" onclick="App.syncNow()">今すぐ同期</button>
+                <button type="button" class="ghost" onclick="App.saveToGitHub()">GitHubへ保存</button>
+                <button type="button" class="ghost" onclick="App.loadFromGitHub()">GitHubから読み込み</button>
+                <button type="button" class="ghost" onclick="App.createGitHubGist()">新規Gist作成</button>
+              </div>
+
+              <div class="sync-status-box" id="githubSyncStatusBox">
+                <div class="sync-status-head">
+                  <span class="sync-badge warn" id="githubSyncBadge">未設定</span>
+                  <strong id="githubSyncTitle">GitHub同期はまだ設定されていません</strong>
+                </div>
+                <div class="sync-meta" id="githubSyncMeta"></div>
+              </div>
+
+              <div class="sync-note-grid">
+                <div class="sync-mini-note">読み込み時に「# 同期用Gist」のような説明文ファイルをJSONとして読まないよう、指定した同期ファイル名と完全一致するJSONだけを読み込みます。</div>
+                <div class="sync-mini-note sync-file-warning">トークンはブラウザ内保存です。共有PC・職場PCでは使わないでください。安全のためJSONバックアップも残してください。</div>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div class="card" style="margin-top:1rem;">
+          <h2>このHTMLの使い方</h2>
+          <div class="grid cols-3">
+            <div class="notice"><strong>1. まず守る</strong>普通預金からVIEWカード引落額を確保します。</div>
+            <div class="notice"><strong>2. 次に見る</strong>引落後の余剰から、通常使える趣味費を出します。</div>
+            <div class="notice"><strong>3. 最後に残す</strong>貯金と投資信託は原則守ります。崩す時は警告表示です。</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="messageDialog">
+    <div class="dialog-inner">
+      <h2 id="dialogTitle">お知らせ</h2>
+      <div id="dialogBody" class="small-text"></div>
+      <div class="form-actions">
+        <button type="button" onclick="document.getElementById('messageDialog').close()">閉じる</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    const App = (() => {
+      const STORAGE_KEY = 'yuno_kakei_dashboard_v1';
+      const SYNC_KEY = 'yuno_kakei_github_sync_v1';
+      const categories = ['趣味・自己投資', '美容・服飾', '医療・体調管理', '日用品', '交通費', '自己投資', '固定費', 'VIEWカード', '仕送り', '収入', '貯金補填', 'その他'];
+      const sources = ['普通預金', '貯金', 'VIEWカード', '投資信託'];
+      const quicks = [
+        { label: '趣味', category: '趣味・自己投資', source: '普通預金' },
+        { label: '美容', category: '美容・服飾', source: '普通預金' },
+        { label: '医療', category: '医療・体調管理', source: '普通預金' },
+        { label: '日用品', category: '日用品', source: '普通預金' },
+        { label: '交通費', category: '交通費', source: '普通預金' },
+        { label: '自己投資', category: '自己投資', source: '普通預金' },
+        { label: '固定費', category: '固定費', source: '普通預金' },
+        { label: 'VIEWカード', category: 'VIEWカード', source: 'VIEWカード' },
+        { label: '仕送り', category: '仕送り', source: '普通預金' },
+        { label: '貯金から補填', category: '貯金補填', source: '貯金', emergency: true, warn: true }
+      ];
+      const keywordMap = [
+        { category: '趣味・自己投資', words: ['amazon', 'アマゾン', '本', '漫画', 'マンガ', 'アプリ', '動画', 'kindle'] },
+        { category: '日用品', words: ['ダイソー', 'daiso', '日用品', '洗剤', '文具', '付箋', '筆箱', 'コーム'] },
+        { category: '医療・体調管理', words: ['薬', '病院', '通院', '整腸薬', '胃薬', '太田胃散', '診察'] },
+        { category: '美容・服飾', words: ['メイク', '化粧品', '服', 'ヘアケア', 'ポーチ', '美容', 'コスメ'] },
+        { category: '交通費', words: ['電車', 'バス', 'suica', 'スイカ', '交通', '運賃'] },
+        { category: '自己投資', words: ['講座', 'レッスン', '面接', '勉強', '書籍', '教材'] },
+        { category: '固定費', words: ['サブスク', '通信費', '保険', '月額', '固定費'] },
+        { category: 'VIEWカード', words: ['view', 'ビューカード', 'カード'] }
+      ];
+
+      const defaultState = {
+        settings: {
+          ordinaryBase: 34479,
+          savingsBase: 150900,
+          investmentBase: 20240,
+          viewDueDate: '2026-06-04',
+          viewDueAmount: 33592,
+          hobbyLimit: 15000,
+          investmentMonthly: 0,
+          defaultSource: '普通預金',
+          userNote: '普通預金はVIEWカード引落を最優先。貯金は原則触らない。投信は動かさない。'
+        },
+        transactions: [],
+        fixedCosts: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      let state = load();
+      let selectedQuick = null;
+      let syncSettings = loadSyncSettings();
+      let syncDirty = false;
+      let syncBusy = false;
+      let autoSyncTimer = null;
+
+      function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
+      function yen(n) {
+        const value = Number(n || 0);
+        return value.toLocaleString('ja-JP') + '円';
+      }
+      function today() { return new Date().toISOString().slice(0, 10); }
+      function monthKey(dateStr) { return (dateStr || today()).slice(0, 7); }
+      function currentMonth() { return today().slice(0, 7); }
+      function byId(id) { return document.getElementById(id); }
+      function num(id) { return Number(byId(id).value || 0); }
+      function escapeHtml(s) {
+        return String(s ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
+      }
+      function id() {
+        return crypto?.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+      }
+
+      function load() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return clone(defaultState);
+          const parsed = JSON.parse(raw);
+          return {
+            ...clone(defaultState),
+            ...parsed,
+            settings: { ...clone(defaultState).settings, ...(parsed.settings || {}) },
+            transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+            fixedCosts: Array.isArray(parsed.fixedCosts) ? parsed.fixedCosts : []
+          };
+        } catch (e) {
+          console.error(e);
+          return clone(defaultState);
+        }
+      }
+
+
+
+      function loadSyncSettings() {
+        const base = {
+          token: '',
+          gistId: '',
+          fileName: 'kakei-dashboard.json',
+          autoSync: false,
+          lastSyncAt: '',
+          lastSyncDirection: '',
+          lastMessage: ''
+        };
+        try {
+          const raw = localStorage.getItem(SYNC_KEY);
+          if (!raw) return base;
+          const parsed = JSON.parse(raw);
+          return { ...base, ...(parsed || {}) };
+        } catch (e) {
+          console.error(e);
+          return base;
+        }
+      }
+
+      function saveSyncSettingsToStorage() {
+        localStorage.setItem(SYNC_KEY, JSON.stringify(syncSettings));
+      }
+
+      function normalizeSyncFileName(name) {
+        const fileName = String(name || '').trim() || 'kakei-dashboard.json';
+        return fileName.toLowerCase().endsWith('.json') ? fileName : fileName + '.json';
+      }
+
+      function getSyncFormValues() {
+        return {
+          token: byId('githubToken')?.value.trim() || '',
+          gistId: byId('githubGistId')?.value.trim() || '',
+          fileName: normalizeSyncFileName(byId('githubFileName')?.value || 'kakei-dashboard.json'),
+          autoSync: Boolean(byId('githubAutoSync')?.checked)
+        };
+      }
+
+      function updateSyncStatus(kind = 'warn', title = '', extra = '') {
+        const badge = byId('githubSyncBadge');
+        const titleEl = byId('githubSyncTitle');
+        const meta = byId('githubSyncMeta');
+        if (!badge || !titleEl || !meta) return;
+        const label = kind === 'ok' ? '設定済み' : kind === 'bad' ? '注意' : '未設定';
+        badge.className = `sync-badge ${kind}`;
+        badge.textContent = label;
+        titleEl.textContent = title || (syncSettings.gistId ? 'GitHub同期を設定済みです' : 'GitHub同期はまだ設定されていません');
+        const last = syncSettings.lastSyncAt ? new Date(syncSettings.lastSyncAt).toLocaleString('ja-JP') : '未実行';
+        const auto = syncSettings.autoSync ? 'ON（30秒ごと）' : 'OFF';
+        const gist = syncSettings.gistId ? escapeHtml(syncSettings.gistId) : '未設定';
+        const file = escapeHtml(syncSettings.fileName || 'kakei-dashboard.json');
+        const direction = syncSettings.lastSyncDirection ? escapeHtml(syncSettings.lastSyncDirection) : 'なし';
+        const message = extra || syncSettings.lastMessage || '';
+        meta.innerHTML = `
+          <div>自動同期：<strong>${auto}</strong></div>
+          <div>最終同期：<strong>${escapeHtml(last)}</strong></div>
+          <div>Gist ID：<span class="sync-code">${gist}</span></div>
+          <div>同期ファイル：<span class="sync-code">${file}</span></div>
+          <div>最終方向：<strong>${direction}</strong></div>
+          <div>${message ? escapeHtml(message) : '状態：待機中'}</div>
+        `;
+      }
+
+      function renderGitHubSyncSettings() {
+        const token = byId('githubToken');
+        const gistId = byId('githubGistId');
+        const fileName = byId('githubFileName');
+        const autoSync = byId('githubAutoSync');
+        if (!token || !gistId || !fileName || !autoSync) return;
+        token.value = syncSettings.token || '';
+        gistId.value = syncSettings.gistId || '';
+        fileName.value = syncSettings.fileName || 'kakei-dashboard.json';
+        autoSync.checked = Boolean(syncSettings.autoSync);
+        const configured = Boolean(syncSettings.token && syncSettings.gistId && syncSettings.fileName);
+        updateSyncStatus(configured ? 'ok' : 'warn', configured ? 'GitHub同期を設定済みです' : 'GitHub同期はまだ設定されていません');
+      }
+
+      function saveGitHubSyncSettings() {
+        syncSettings = { ...syncSettings, ...getSyncFormValues(), lastMessage: '同期設定を保存しました' };
+        saveSyncSettingsToStorage();
+        setupAutoSync();
+        renderGitHubSyncSettings();
+        showMessage('同期設定を保存しました', 'PCとAndroidで同じGist ID・同じ同期ファイル名・同じトークンを設定してください。');
+      }
+
+      function validateSyncConfig({ requireGist = true } = {}) {
+        const values = getSyncFormValues();
+        syncSettings = { ...syncSettings, ...values };
+        saveSyncSettingsToStorage();
+        if (!syncSettings.token) throw new Error('GitHub Personal Access Tokenを入力してください。');
+        if (requireGist && !syncSettings.gistId) throw new Error('Gist IDを入力してください。');
+        if (!syncSettings.fileName) throw new Error('同期ファイル名を入力してください。');
+        return syncSettings;
+      }
+
+      function githubHeaders() {
+        return {
+          'Accept': 'application/vnd.github+json',
+          'Authorization': `Bearer ${syncSettings.token}`,
+          'X-GitHub-Api-Version': '2022-11-28'
+        };
+      }
+
+      function applySyncedState(parsed) {
+        if (!parsed || !parsed.settings) throw new Error('家計管理データの形式ではありません。');
+        state = {
+          ...clone(defaultState),
+          ...parsed,
+          settings: { ...clone(defaultState).settings, ...(parsed.settings || {}) },
+          transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+          fixedCosts: Array.isArray(parsed.fixedCosts) ? parsed.fixedCosts : []
+        };
+        const fixedDataRepaired = normalizeFixedCosts();
+        save();
+        syncDirty = false;
+        if (fixedDataRepaired) save();
+        render();
+      }
+
+      async function saveToGitHub(silent = false) {
+        if (syncBusy) return;
+        try {
+          validateSyncConfig();
+          syncBusy = true;
+          updateSyncStatus('warn', 'GitHubへ保存中です', '通信中');
+          const body = {
+            description: '家計管理ダッシュボード同期用Gist',
+            files: {
+              [syncSettings.fileName]: {
+                content: JSON.stringify(state, null, 2)
+              }
+            }
+          };
+          const res = await fetch(`https://api.github.com/gists/${encodeURIComponent(syncSettings.gistId)}`, {
+            method: 'PATCH',
+            headers: { ...githubHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          if (!res.ok) throw new Error(`GitHub保存に失敗しました（HTTP ${res.status}）`);
+          syncSettings.lastSyncAt = new Date().toISOString();
+          syncSettings.lastSyncDirection = 'GitHubへ保存';
+          syncSettings.lastMessage = `${syncSettings.fileName} を保存しました`;
+          saveSyncSettingsToStorage();
+          syncDirty = false;
+          updateSyncStatus('ok', 'GitHubへ保存済み', syncSettings.lastMessage);
+          if (!silent) showMessage('GitHubへ保存しました', `${escapeHtml(syncSettings.fileName)} に現在の家計データを保存しました。`);
+        } catch (e) {
+          console.error(e);
+          syncSettings.lastMessage = e.message || 'GitHub保存に失敗しました';
+          saveSyncSettingsToStorage();
+          updateSyncStatus('bad', 'GitHub保存に失敗しました', syncSettings.lastMessage);
+          if (!silent) showMessage('GitHubへ保存できませんでした', escapeHtml(syncSettings.lastMessage));
+        } finally {
+          syncBusy = false;
+        }
+      }
+
+      async function loadFromGitHub() {
+        if (syncBusy) return;
+        try {
+          validateSyncConfig();
+          const ok = confirm('GitHub上のデータで、この端末の家計データを上書きします。実行しますか？');
+          if (!ok) return;
+          syncBusy = true;
+          updateSyncStatus('warn', 'GitHubから読み込み中です', '通信中');
+          const res = await fetch(`https://api.github.com/gists/${encodeURIComponent(syncSettings.gistId)}`, {
+            method: 'GET',
+            headers: githubHeaders(),
+            cache: 'no-store'
+          });
+          if (!res.ok) throw new Error(`GitHub読み込みに失敗しました（HTTP ${res.status}）`);
+          const gist = await res.json();
+          const file = gist.files?.[syncSettings.fileName];
+          if (!file) {
+            const names = Object.keys(gist.files || {}).join('、') || 'ファイルなし';
+            throw new Error(`同期ファイル「${syncSettings.fileName}」が見つかりません。Gist内：${names}`);
+          }
+          let content = file.content;
+          if (file.truncated && file.raw_url) {
+            const rawRes = await fetch(file.raw_url, { cache: 'no-store' });
+            if (!rawRes.ok) throw new Error(`同期ファイルの完全版を読み込めませんでした（HTTP ${rawRes.status}）`);
+            content = await rawRes.text();
+          }
+          const parsed = JSON.parse(content);
+          applySyncedState(parsed);
+          syncSettings.lastSyncAt = new Date().toISOString();
+          syncSettings.lastSyncDirection = 'GitHubから読み込み';
+          syncSettings.lastMessage = `${syncSettings.fileName} を読み込みました`;
+          saveSyncSettingsToStorage();
+          updateSyncStatus('ok', 'GitHubから読み込み済み', syncSettings.lastMessage);
+          showMessage('GitHubから読み込みました', `${escapeHtml(syncSettings.fileName)} のデータをこの端末に反映しました。`);
+        } catch (e) {
+          console.error(e);
+          syncSettings.lastMessage = e.message || 'GitHub読み込みに失敗しました';
+          saveSyncSettingsToStorage();
+          updateSyncStatus('bad', 'GitHub読み込みに失敗しました', syncSettings.lastMessage);
+          showMessage('GitHubから読み込めませんでした', escapeHtml(syncSettings.lastMessage));
+        } finally {
+          syncBusy = false;
+        }
+      }
+
+      async function createGitHubGist() {
+        if (syncBusy) return;
+        try {
+          validateSyncConfig({ requireGist: false });
+          syncBusy = true;
+          updateSyncStatus('warn', '新規Gistを作成中です', '通信中');
+          const body = {
+            description: '家計管理ダッシュボード同期用Gist',
+            public: false,
+            files: {
+              [syncSettings.fileName]: { content: JSON.stringify(state, null, 2) },
+              'README.md': { content: '# 家計管理ダッシュボード同期用Gist\n\nこのGistはローカルHTML版の同期用です。家計データ本体は指定したJSONファイルに保存されます。' }
+            }
+          };
+          const res = await fetch('https://api.github.com/gists', {
+            method: 'POST',
+            headers: { ...githubHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          if (!res.ok) throw new Error(`Gist作成に失敗しました（HTTP ${res.status}）`);
+          const created = await res.json();
+          syncSettings.gistId = created.id || syncSettings.gistId;
+          syncSettings.lastSyncAt = new Date().toISOString();
+          syncSettings.lastSyncDirection = '新規Gist作成';
+          syncSettings.lastMessage = `${syncSettings.fileName} を含む非公開Gistを作成しました`;
+          saveSyncSettingsToStorage();
+          syncDirty = false;
+          renderGitHubSyncSettings();
+          updateSyncStatus('ok', '新規Gistを作成しました', syncSettings.lastMessage);
+          showMessage('新規Gistを作成しました', `Gist IDを自動入力しました。<br><span class="sync-code">${escapeHtml(syncSettings.gistId)}</span>`);
+        } catch (e) {
+          console.error(e);
+          syncSettings.lastMessage = e.message || 'Gist作成に失敗しました';
+          saveSyncSettingsToStorage();
+          updateSyncStatus('bad', 'Gist作成に失敗しました', syncSettings.lastMessage);
+          showMessage('Gistを作成できませんでした', escapeHtml(syncSettings.lastMessage));
+        } finally {
+          syncBusy = false;
+        }
+      }
+
+      function syncNow() {
+        return saveToGitHub(false);
+      }
+
+      function toggleGitHubTokenVisibility() {
+        const el = byId('githubToken');
+        if (!el) return;
+        el.type = el.type === 'password' ? 'text' : 'password';
+      }
+
+      function setupAutoSync() {
+        if (autoSyncTimer) clearInterval(autoSyncTimer);
+        autoSyncTimer = null;
+        if (!syncSettings.autoSync) return;
+        autoSyncTimer = setInterval(() => {
+          if (!syncSettings.autoSync || syncBusy || !syncDirty) return;
+          if (!syncSettings.token || !syncSettings.gistId || !syncSettings.fileName) return;
+          saveToGitHub(true);
+        }, 30000);
+      }
+
+
+      function save() {
+        state.updatedAt = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        syncDirty = true;
+        const status = byId('saveStatus');
+        if (status) {
+          status.textContent = '保存しました ' + new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+          setTimeout(() => { status.textContent = '自動保存中'; }, 1800);
+        }
+      }
+
+      function normalizeFixedCosts() {
+        let changed = false;
+        const raw = Array.isArray(state.fixedCosts) ? state.fixedCosts : [];
+        state.fixedCosts = raw.map((x) => {
+          const item = { ...(x || {}) };
+          if (!item.id) { item.id = id(); changed = true; }
+          const fixedName = String(item.name || item.title || item.label || '名称未入力').trim() || '名称未入力';
+          if (item.name !== fixedName) { item.name = fixedName; changed = true; }
+          const amount = Number(item.amount ?? item.monthly ?? item.price ?? 0);
+          const safeAmount = Number.isFinite(amount) ? amount : 0;
+          if (item.amount !== safeAmount) { item.amount = safeAmount; changed = true; }
+          const category = item.category || 'その他';
+          if (item.category !== category) { item.category = category; changed = true; }
+          const status = ['継続', '見直し', '解約候補'].includes(item.status) ? item.status : '継続';
+          if (item.status !== status) { item.status = status; changed = true; }
+          const note = item.note ?? item.memo ?? '';
+          if (item.note !== note) { item.note = note; changed = true; }
+          return item;
+        });
+        return changed;
+      }
+
+      function getFixedRows() {
+        normalizeFixedCosts();
+        return [...state.fixedCosts].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      }
+
+      function calc() {
+        const s = state.settings;
+        let ordinary = Number(s.ordinaryBase || 0);
+        let savings = Number(s.savingsBase || 0);
+        let investment = Number(s.investmentBase || 0);
+        let viewCardUsage = 0;
+        let spentThisMonth = 0;
+        let hobbySpent = 0;
+        let ordinarySpentMonth = 0;
+        let incomeThisMonth = 0;
+        const catMonth = {};
+        const fixedRows = getFixedRows();
+        const fixedTotal = fixedRows.reduce((sum, x) => sum + Number(x.amount || 0), 0);
+        const insuranceTotal = fixedRows.filter(x => x.category === '保険').reduce((sum, x) => sum + Number(x.amount || 0), 0);
+
+        for (const tx of state.transactions) {
+          const amount = Number(tx.amount || 0);
+          const txMonth = monthKey(tx.date);
+          const isNow = txMonth === currentMonth();
+
+          if (tx.type === '収入') {
+            if (tx.source === '貯金') savings += amount;
+            else if (tx.source === '投資信託') investment += amount;
+            else ordinary += amount;
+            if (isNow) incomeThisMonth += amount;
+          } else if (tx.type === '振替') {
+            if (tx.source === '貯金') savings += amount;
+            else ordinary += amount;
+          } else {
+            if (tx.source === '貯金') savings -= amount;
+            else if (tx.source === '投資信託') investment -= amount;
+            else if (tx.source === 'VIEWカード') viewCardUsage += amount;
+            else ordinary -= amount;
+
+            if (isNow) {
+              spentThisMonth += amount;
+              catMonth[tx.category] = (catMonth[tx.category] || 0) + amount;
+              if (tx.source === '普通預金') ordinarySpentMonth += amount;
+              if (['趣味・自己投資', '自己投資'].includes(tx.category)) hobbySpent += amount;
+            }
+          }
+        }
+
+        const viewAfter = ordinary - Number(s.viewDueAmount || 0);
+        const hobbyRemainingByLimit = Math.max(0, Number(s.hobbyLimit || 0) - hobbySpent);
+        const normalHobbyAvailable = Math.min(Math.max(0, viewAfter), hobbyRemainingByLimit);
+        const emergencyHobbyAvailable = hobbyRemainingByLimit;
+        const savingsSupplement = Math.max(0, emergencyHobbyAvailable - normalHobbyAvailable);
+        const totalAssets = ordinary + savings + investment;
+        const sendCandidate = Math.max(0, viewAfter - normalHobbyAvailable);
+
+        return {
+          ordinary, savings, investment, totalAssets,
+          viewAfter, normalHobbyAvailable, emergencyHobbyAvailable, savingsSupplement, sendCandidate,
+          viewCardUsage, spentThisMonth, hobbySpent, ordinarySpentMonth, incomeThisMonth,
+          catMonth, fixedTotal, insuranceTotal
+        };
+      }
+
+      function getMonthlyExpenseMap() {
+        const map = {};
+        for (const tx of state.transactions) {
+          if (tx.type !== '支出') continue;
+          const m = monthKey(tx.date);
+          map[m] = map[m] || { total: 0, cats: {} };
+          map[m].total += Number(tx.amount || 0);
+          map[m].cats[tx.category] = (map[m].cats[tx.category] || 0) + Number(tx.amount || 0);
+        }
+        return map;
+      }
+
+      function lastNMonths(n) {
+        const result = [];
+        const d = new Date();
+        d.setDate(1);
+        for (let i = 0; i < n; i++) {
+          const copy = new Date(d);
+          copy.setMonth(d.getMonth() - i);
+          result.push(copy.toISOString().slice(0, 7));
+        }
+        return result;
+      }
+
+      function render() {
+        fillSelects();
+        renderSummary();
+        renderInputPreview();
+        renderHistory();
+        renderViewCard();
+        renderAssets();
+        renderFixed();
+        renderReports();
+        renderSettingsForms();
+        renderGitHubSyncSettings();
+      }
+
+      function fillSelects() {
+        const sourceSelects = ['source', 'defaultSource'];
+        for (const idName of sourceSelects) {
+          const el = byId(idName);
+          if (!el) continue;
+          const current = el.value || state.settings.defaultSource;
+          el.innerHTML = sources.map(x => `<option value="${x}">${x}</option>`).join('');
+          el.value = current || '普通預金';
+        }
+        const categorySelects = ['category', 'historyCategory'];
+        for (const idName of categorySelects) {
+          const el = byId(idName);
+          if (!el) continue;
+          const current = el.value;
+          const first = idName === 'historyCategory' ? '<option value="">すべて</option>' : '';
+          el.innerHTML = first + categories.map(x => `<option value="${x}">${x}</option>`).join('');
+          if (current) el.value = current;
+        }
+        const qb = byId('quickButtons');
+        if (qb && !qb.dataset.ready) {
+          qb.innerHTML = quicks.map(q => `<button type="button" class="${q.warn ? 'warn' : ''}" data-label="${q.label}">${q.label}</button>`).join('');
+          qb.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            const q = quicks.find(x => x.label === btn.dataset.label);
+            if (!q) return;
+            selectedQuick = q;
+            byId('category').value = q.category;
+            byId('source').value = q.source;
+            byId('type').value = '支出';
+            qb.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+            renderInputPreview();
+          });
+          qb.dataset.ready = '1';
+        }
+        const keywords = byId('keywordList');
+        if (keywords) {
+          keywords.innerHTML = keywordMap.map(k => `<div><span class="pill">${k.category}</span> ${k.words.map(escapeHtml).join('、')}</div>`).join('');
+        }
+      }
+
+      function renderSummary() {
+        const c = calc();
+        const s = state.settings;
+        const viewClass = c.viewAfter >= 0 ? 'ok' : 'bad';
+        const hobbyClass = c.normalHobbyAvailable > 0 ? 'ok' : (c.savingsSupplement > 0 ? 'warn' : 'bad');
+        const summary = [
+          { title: '普通預金', value: yen(c.ordinary), note: '日常決済用。VIEW引落を最優先', pill: '決済口座' },
+          { title: '貯金', value: yen(c.savings), note: '原則触らない。臨時・不足時のみ', pill: '守るお金' },
+          { title: '投資信託', value: yen(c.investment), note: '使えるお金に含めない', pill: '使用不可' },
+          { title: '総資産', value: yen(c.totalAssets), note: '普通預金＋貯金＋投信', pill: '全体' },
+          { title: 'VIEW引落予定', value: yen(s.viewDueAmount), note: `${s.viewDueDate} 引落予定`, pill: '最優先' },
+          { title: '引落後の普通預金', value: yen(c.viewAfter), note: c.viewAfter >= 0 ? '引落対応OK' : '普通預金不足', pill: c.viewAfter >= 0 ? 'OK' : '不足', cls: viewClass },
+          { title: '通常使える趣味費', value: yen(c.normalHobbyAvailable), note: '普通預金余剰の範囲', pill: '通常枠', cls: hobbyClass },
+          { title: '臨時で最大使える趣味費', value: yen(c.emergencyHobbyAvailable), note: `月上限 ${yen(s.hobbyLimit)} まで`, pill: '上限枠' },
+          { title: '貯金から補う額', value: yen(c.savingsSupplement), note: c.savingsSupplement > 0 ? '使うなら臨時扱い' : '補填不要', pill: c.savingsSupplement > 0 ? '警告' : '不要', cls: c.savingsSupplement > 0 ? 'warn' : 'ok' },
+          { title: '仕送り候補', value: yen(c.sendCandidate), note: 'VIEWと通常趣味費を除いた余剰', pill: '候補' },
+          { title: '固定費合計', value: yen(c.fixedTotal), note: '登録済み固定費の合計', pill: '見直し対象' },
+          { title: '保険料', value: yen(c.insuranceTotal), note: '保険分類の合計', pill: '確認対象' }
+        ];
+        byId('summaryCards').innerHTML = summary.map(x => `
+          <div class="card summary-card">
+            <div class="summary-top"><h3>${x.title}</h3><span class="pill ${x.cls || ''}">${x.pill}</span></div>
+            <div class="money">${x.value}</div>
+            <div class="muted small-text">${x.note}</div>
+          </div>
+        `).join('');
+
+        const notices = [];
+        notices.push(c.viewAfter >= 0
+          ? `<div class="notice ok"><strong>VIEWカード引落は対応OK</strong>普通預金から ${yen(s.viewDueAmount)} を確保しても、${yen(c.viewAfter)} 残ります。</div>`
+          : `<div class="notice bad"><strong>VIEWカード引落に不足</strong>普通預金が ${yen(Math.abs(c.viewAfter))} 足りません。趣味費より先にここを守る必要があります。</div>`);
+        if (c.normalHobbyAvailable > 0) {
+          notices.push(`<div class="notice ok"><strong>普通預金内で趣味費を使える</strong>通常枠は ${yen(c.normalHobbyAvailable)} です。</div>`);
+        } else if (c.emergencyHobbyAvailable > 0) {
+          notices.push(`<div class="notice warn"><strong>趣味費は貯金補填扱い</strong>月上限まで使う場合、最大 ${yen(c.savingsSupplement)} を貯金から補う計算です。</div>`);
+        } else {
+          notices.push(`<div class="notice bad"><strong>趣味費上限に到達</strong>今月の趣味・自己投資カテゴリが上限に達しています。</div>`);
+        }
+        notices.push(`<div class="notice"><strong>投資信託は使わない</strong>投信 ${yen(c.investment)} は資産欄には表示しますが、使えるお金には入れていません。</div>`);
+        byId('safetyNotices').innerHTML = notices.join('');
+
+        byId('hobbySpentLabel').textContent = yen(c.hobbySpent) + ' / ' + yen(s.hobbyLimit);
+        const pct = s.hobbyLimit ? Math.min(100, Math.round((c.hobbySpent / s.hobbyLimit) * 100)) : 0;
+        const hp = byId('hobbyProgress');
+        hp.style.setProperty('--w', pct + '%');
+        hp.className = 'progress ' + (pct >= 100 ? 'bad' : pct >= 75 ? 'warn' : '');
+        byId('hobbyAdvice').className = 'notice ' + (pct >= 100 ? 'bad' : pct >= 75 ? 'warn' : 'ok');
+        byId('hobbyAdvice').innerHTML = pct >= 100
+          ? '<strong>上限超過に注意</strong>今月はもう趣味費を追加しない方が安全です。'
+          : pct >= 75
+            ? '<strong>そろそろ黄色信号</strong>欲しいものは一晩寝かせるルールが合います。'
+            : '<strong>まだ管理内</strong>ただしVIEWカード引落後の余剰を優先して見てください。';
+
+        renderCategorySummary(c.catMonth);
+        renderRecentTransactions();
+      }
+
+      function renderCategorySummary(catMonth) {
+        const entries = Object.entries(catMonth).sort((a, b) => b[1] - a[1]);
+        if (!entries.length) {
+          byId('categorySummary').innerHTML = '<div class="empty">今月の支出はまだ登録されていません。</div>';
+          return;
+        }
+        const max = Math.max(...entries.map(x => x[1]));
+        byId('categorySummary').innerHTML = entries.map(([cat, amount]) => {
+          const pct = max ? Math.round((amount / max) * 100) : 0;
+          return `<div style="margin-bottom:.8rem;">
+            <div class="split"><strong>${cat}</strong><span>${yen(amount)}</span></div>
+            <div class="progress" style="margin-top:.3rem; --w:${pct}%;"><span></span></div>
+          </div>`;
+        }).join('');
+      }
+
+      function renderRecentTransactions() {
+        const recent = [...state.transactions].sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || '')).slice(0, 6);
+        if (!recent.length) {
+          byId('recentTransactions').innerHTML = '<div class="empty">まだ履歴がありません。かんたん入力から登録してください。</div>';
+          return;
+        }
+        byId('recentTransactions').innerHTML = recent.map(tx => `
+          <div class="notice" style="margin-bottom:.55rem;">
+            <div class="split"><strong>${escapeHtml(tx.description)}</strong><span class="${tx.type === '収入' ? 'amount-income' : 'amount-expense'}">${tx.type === '収入' ? '+' : '-'}${yen(tx.amount)}</span></div>
+            <div class="muted tiny">${tx.date}｜${tx.category}｜${tx.source}${tx.emergency ? '｜臨時' : ''}</div>
+          </div>
+        `).join('');
+      }
+
+      function renderInputPreview() {
+        const amount = Number(byId('amount')?.value || 0);
+        const source = byId('source')?.value || state.settings.defaultSource;
+        const category = byId('category')?.value || 'その他';
+        const type = byId('type')?.value || '支出';
+        const c = calc();
+        let ordinary = c.ordinary;
+        let savings = c.savings;
+        let investment = c.investment;
+        let viewUse = c.viewCardUsage;
+        if (amount > 0) {
+          if (type === '収入') {
+            if (source === '貯金') savings += amount;
+            else if (source === '投資信託') investment += amount;
+            else ordinary += amount;
+          } else if (type === '支出') {
+            if (source === '貯金') savings -= amount;
+            else if (source === '投資信託') investment -= amount;
+            else if (source === 'VIEWカード') viewUse += amount;
+            else ordinary -= amount;
+          }
+        }
+        const viewAfter = ordinary - Number(state.settings.viewDueAmount || 0);
+        let warning = '';
+        if (source === '投資信託' && type === '支出') warning = '<div class="notice bad"><strong>投信は支出元にしない</strong>要件上、投資信託は動かせないお金です。</div>';
+        else if (source === '貯金' && type === '支出') warning = '<div class="notice warn"><strong>貯金を崩す入力です</strong>臨時・不足時だけにする扱いです。</div>';
+        else if (category === 'VIEWカード' || source === 'VIEWカード') warning = '<div class="notice"><strong>VIEWカード利用として登録</strong>普通預金からは今すぐ引かず、カード利用メモとして集計します。</div>';
+        else if (viewAfter < 0) warning = '<div class="notice bad"><strong>入力後、VIEW引落に不足します</strong>この支出は一度止めて確認した方が安全です。</div>';
+        else warning = '<div class="notice ok"><strong>入力後も大きな問題なし</strong>VIEWカード引落後の残高は守れています。</div>';
+
+        const panel = byId('previewPanel');
+        if (!panel) return;
+        panel.innerHTML = `
+          ${warning}
+          <div class="notice"><strong>入力後の普通預金見込み</strong><span class="submoney">${yen(ordinary)}</span></div>
+          <div class="notice"><strong>VIEW引落後の普通預金見込み</strong><span class="submoney">${yen(viewAfter)}</span></div>
+          <div class="notice"><strong>貯金見込み</strong><span class="submoney">${yen(savings)}</span></div>
+          <div class="notice"><strong>VIEWカード利用メモ合計</strong><span class="submoney">${yen(viewUse)}</span></div>
+        `;
+      }
+
+      function autoCategory(text) {
+        const lower = String(text || '').toLowerCase();
+        for (const item of keywordMap) {
+          if (item.words.some(w => lower.includes(w.toLowerCase()))) return item.category;
+        }
+        return 'その他';
+      }
+
+      function applyAutoCategory() {
+        const desc = byId('description').value;
+        const cat = autoCategory(desc);
+        byId('category').value = cat;
+        if (cat === 'VIEWカード') byId('source').value = 'VIEWカード';
+        renderInputPreview();
+      }
+
+      function resetForm() {
+        byId('txForm').reset();
+        byId('date').value = today();
+        byId('source').value = state.settings.defaultSource || '普通預金';
+        byId('category').value = 'その他';
+        selectedQuick = null;
+        document.querySelectorAll('#quickButtons button').forEach(b => b.classList.remove('active'));
+        renderInputPreview();
+      }
+
+      function addTransaction(e) {
+        e.preventDefault();
+        const amount = num('amount');
+        const description = byId('description').value.trim();
+        if (!amount || amount <= 0 || !description) return showMessage('入力不足', '金額と使途を入力してください。');
+        const source = byId('source').value;
+        const category = byId('category').value || autoCategory(description);
+        const type = byId('type').value;
+        if (type === '支出' && source === '投資信託') {
+          showMessage('投資信託は使わない設定です', '投資信託は「動かせないお金」として扱う要件です。どうしても記録したい場合以外は、支払元を変更してください。');
+          return;
+        }
+        state.transactions.push({
+          id: id(),
+          date: byId('date').value || today(),
+          type,
+          amount,
+          description,
+          category,
+          source,
+          memo: byId('memo').value.trim(),
+          emergency: selectedQuick?.emergency || source === '貯金',
+          createdAt: new Date().toISOString()
+        });
+        save();
+        resetForm();
+        render();
+        showMessage('登録しました', `${escapeHtml(description)}：${yen(amount)} を登録しました。`);
+      }
+
+      function renderHistory() {
+        const month = byId('historyMonth')?.value || '';
+        const cat = byId('historyCategory')?.value || '';
+        let rows = [...state.transactions];
+        if (month) rows = rows.filter(tx => monthKey(tx.date) === month);
+        if (cat) rows = rows.filter(tx => tx.category === cat);
+        rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.createdAt || '').localeCompare(a.createdAt || ''));
+        if (!rows.length) {
+          byId('historyTable').innerHTML = '<div class="empty">該当する履歴はありません。</div>';
+          return;
+        }
+        byId('historyTable').innerHTML = `<div class="table-wrap"><table>
+          <thead><tr><th>日付</th><th>種別</th><th>使途</th><th>カテゴリ</th><th>支払元</th><th class="right">金額</th><th>メモ</th><th class="no-print">操作</th></tr></thead>
+          <tbody>${rows.map(tx => `<tr>
+            <td>${tx.date}</td>
+            <td>${tx.type}${tx.emergency ? '<br><span class="pill warn">臨時</span>' : ''}</td>
+            <td>${escapeHtml(tx.description)}</td>
+            <td>${tx.category}</td>
+            <td>${tx.source}</td>
+            <td class="right ${tx.type === '収入' ? 'amount-income' : 'amount-expense'}">${tx.type === '収入' ? '+' : '-'}${yen(tx.amount)}</td>
+            <td>${escapeHtml(tx.memo || '')}</td>
+            <td class="no-print"><button class="small danger" type="button" onclick="App.deleteTransaction('${tx.id}')">削除</button></td>
+          </tr>`).join('')}</tbody>
+        </table></div>`;
+      }
+
+      function deleteTransaction(txId) {
+        const tx = state.transactions.find(x => x.id === txId);
+        if (!tx) return;
+        if (!confirm(`「${tx.description}」を削除しますか？`)) return;
+        state.transactions = state.transactions.filter(x => x.id !== txId);
+        save();
+        render();
+      }
+
+      function renderViewCard() {
+        const c = calc();
+        const s = state.settings;
+        byId('viewStatus').innerHTML = `
+          <div class="notice ${c.viewAfter >= 0 ? 'ok' : 'bad'}"><strong>引落判定</strong>${c.viewAfter >= 0 ? '普通預金で対応できます。' : '普通預金が不足しています。'}<br><span class="submoney">引落後：${yen(c.viewAfter)}</span></div>
+          <div class="notice"><strong>次回引落日</strong>${s.viewDueDate}</div>
+          <div class="notice"><strong>次回引落額</strong><span class="submoney">${yen(s.viewDueAmount)}</span></div>
+          <div class="notice"><strong>登録済みVIEWカード利用メモ</strong><span class="submoney">${yen(c.viewCardUsage)}</span></div>
+        `;
+        byId('viewDueDate').value = s.viewDueDate;
+        byId('viewDueAmount').value = s.viewDueAmount;
+        const rows = state.transactions.filter(tx => tx.source === 'VIEWカード').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        byId('viewCardTxTable').innerHTML = rows.length ? `<div class="table-wrap"><table>
+          <thead><tr><th>日付</th><th>使途</th><th>カテゴリ</th><th class="right">金額</th><th>メモ</th></tr></thead>
+          <tbody>${rows.map(tx => `<tr><td>${tx.date}</td><td>${escapeHtml(tx.description)}</td><td>${tx.category}</td><td class="right amount-expense">${yen(tx.amount)}</td><td>${escapeHtml(tx.memo || '')}</td></tr>`).join('')}</tbody>
+        </table></div>` : '<div class="empty">VIEWカード利用メモはまだありません。</div>';
+      }
+
+      function saveViewSettings(e) {
+        e.preventDefault();
+        state.settings.viewDueDate = byId('viewDueDate').value || state.settings.viewDueDate;
+        state.settings.viewDueAmount = num('viewDueAmount');
+        save();
+        render();
+        showMessage('VIEWカード設定を保存しました', '次回引落日と引落額を更新しました。');
+      }
+
+      function renderAssets() {
+        const c = calc();
+        byId('assetPanel').innerHTML = `
+          <div class="notice"><strong>普通預金</strong><span class="submoney">${yen(c.ordinary)}</span><br><span class="muted">VIEWカード引落を最優先で確保</span></div>
+          <div class="notice"><strong>貯金</strong><span class="submoney">${yen(c.savings)}</span><br><span class="muted">原則触らない</span></div>
+          <div class="notice"><strong>投資信託</strong><span class="submoney">${yen(c.investment)}</span><br><span class="muted">使えるお金に含めない</span></div>
+          <div class="notice"><strong>総資産</strong><span class="submoney">${yen(c.totalAssets)}</span></div>
+        `;
+        byId('ordinaryBase').value = state.settings.ordinaryBase;
+        byId('savingsBase').value = state.settings.savingsBase;
+        byId('investmentBase').value = state.settings.investmentBase;
+        byId('investmentMonthly').value = state.settings.investmentMonthly;
+      }
+
+      function saveAssetSettings(e) {
+        e.preventDefault();
+        state.settings.ordinaryBase = num('ordinaryBase');
+        state.settings.savingsBase = num('savingsBase');
+        state.settings.investmentBase = num('investmentBase');
+        state.settings.investmentMonthly = num('investmentMonthly');
+        save();
+        render();
+        showMessage('資産設定を保存しました', '普通預金・貯金・投信の初期値を更新しました。');
+      }
+
+      function renderFixed() {
+        const rows = getFixedRows();
+        const total = rows.reduce((sum, x) => sum + Number(x.amount || 0), 0);
+        const review = rows.filter(x => x.status !== '継続').reduce((sum, x) => sum + Number(x.amount || 0), 0);
+        const insurance = rows.filter(x => x.category === '保険').reduce((sum, x) => sum + Number(x.amount || 0), 0);
+        const visibleCount = rows.length;
+        byId('fixedSummary').innerHTML = `
+          <div class="notice"><strong>固定費合計</strong><span class="submoney">${yen(total)}</span><br><span class="muted small-text">下の一覧に表示されている ${visibleCount} 件だけを合計</span></div>
+          <div class="notice warn"><strong>見直し・解約候補</strong><span class="submoney">${yen(review)}</span><br><span class="muted small-text">状態が「見直し」「解約候補」の合計</span></div>
+          <div class="notice"><strong>保険料合計</strong><span class="submoney">${yen(insurance)}</span><br><span class="muted small-text">分類が「保険」の合計</span></div>
+          <div class="notice"><strong>注意</strong>保険は勢いで解約せず、保障内容を確認してから判断してください。</div>
+        `;
+        byId('fixedTable').innerHTML = rows.length ? `<div class="table-meta">登録済み固定費：${visibleCount}件。新しく追加した項目は一番上に表示されます。</div><div class="table-wrap"><table aria-label="固定費・保険一覧">
+          <thead><tr><th>名称</th><th>分類</th><th>状態</th><th class="right">月額</th><th>メモ</th><th class="no-print">操作</th></tr></thead>
+          <tbody>${rows.map(x => `<tr>
+            <td><strong>${escapeHtml(x.name)}</strong></td><td>${escapeHtml(x.category)}</td><td><span class="pill ${x.status === '継続' ? 'ok' : x.status === '見直し' ? 'warn' : 'bad'}">${escapeHtml(x.status)}</span></td>
+            <td class="right">${yen(x.amount)}</td><td>${escapeHtml(x.note || '')}</td>
+            <td class="no-print"><button class="small danger" type="button" onclick="App.deleteFixed('${x.id}')">削除</button></td>
+          </tr>`).join('')}</tbody>
+        </table></div>` : '<div class="empty">固定費はまだ登録されていません。</div>';
+      }
+
+      function addFixed(e) {
+        e.preventDefault();
+        const name = byId('fixedName').value.trim();
+        const amount = num('fixedAmount');
+        if (!name || !amount) return showMessage('入力不足', '名称と月額を入力してください。');
+        state.fixedCosts.unshift({
+          id: id(),
+          name,
+          amount,
+          category: byId('fixedCategory').value,
+          status: byId('fixedStatus').value,
+          note: byId('fixedNote').value.trim(),
+          createdAt: new Date().toISOString()
+        });
+        byId('fixedForm').reset();
+        save();
+        render();
+        byId('fixedTable')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function deleteFixed(fixedId) {
+        const item = state.fixedCosts.find(x => x.id === fixedId);
+        if (!item) return;
+        if (!confirm(`「${item.name}」を削除しますか？`)) return;
+        state.fixedCosts = state.fixedCosts.filter(x => x.id !== fixedId);
+        save();
+        render();
+      }
+
+      function renderReports() {
+        const map = getMonthlyExpenseMap();
+        const months = lastNMonths(3).reverse();
+        const totals = months.map(m => map[m]?.total || 0);
+        const avg = totals.reduce((a, b) => a + b, 0) / months.length;
+        byId('avgPanel').innerHTML = `
+          <div class="notice"><strong>直近3か月平均支出</strong><span class="submoney">${yen(Math.round(avg))}</span></div>
+          <div class="notice"><strong>今月支出</strong><span class="submoney">${yen(map[currentMonth()]?.total || 0)}</span></div>
+          <div class="notice"><strong>平均との差</strong><span class="submoney">${yen((map[currentMonth()]?.total || 0) - Math.round(avg))}</span></div>
+          <div class="notice"><strong>予算候補</strong>今は固定予算を決めず、3か月平均を予算候補として見る設計です。</div>
+        `;
+        byId('monthlyPanel').innerHTML = `<div class="table-wrap"><table>
+          <thead><tr><th>月</th><th class="right">支出合計</th></tr></thead>
+          <tbody>${months.map(m => `<tr><td>${m}</td><td class="right">${yen(map[m]?.total || 0)}</td></tr>`).join('')}</tbody>
+        </table></div>`;
+
+        const cats = {};
+        for (const m of months) {
+          for (const cat of categories) cats[cat] = cats[cat] || 0;
+          const item = map[m];
+          if (!item) continue;
+          Object.entries(item.cats).forEach(([cat, amount]) => cats[cat] = (cats[cat] || 0) + amount);
+        }
+        const entries = Object.entries(cats).filter(([, amount]) => amount > 0).sort((a, b) => b[1] - a[1]);
+        byId('categoryAvgPanel').innerHTML = entries.length ? `<div class="table-wrap"><table>
+          <thead><tr><th>カテゴリ</th><th class="right">3か月合計</th><th class="right">月平均</th></tr></thead>
+          <tbody>${entries.map(([cat, amount]) => `<tr><td>${cat}</td><td class="right">${yen(amount)}</td><td class="right">${yen(Math.round(amount / 3))}</td></tr>`).join('')}</tbody>
+        </table></div>` : '<div class="empty">3か月平均を出すための支出データがまだありません。</div>';
+      }
+
+      function renderSettingsForms() {
+        byId('hobbyLimit').value = state.settings.hobbyLimit;
+        byId('defaultSource').value = state.settings.defaultSource || '普通預金';
+        byId('userNote').value = state.settings.userNote || '';
+      }
+
+      function saveBasicSettings(e) {
+        e.preventDefault();
+        state.settings.hobbyLimit = num('hobbyLimit');
+        state.settings.defaultSource = byId('defaultSource').value;
+        state.settings.userNote = byId('userNote').value.trim();
+        save();
+        resetForm();
+        render();
+        showMessage('設定を保存しました', '趣味費上限と通常支払元を更新しました。');
+      }
+
+      function exportJSON() {
+        const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+        downloadBlob(blob, `家計管理バックアップ_${today()}.json`);
+      }
+
+      function exportCSV() {
+        const header = ['日付', '種別', '金額', '使途', 'カテゴリ', '支払元', '臨時', 'メモ'];
+        const rows = state.transactions.map(tx => [
+          tx.date, tx.type, tx.amount, tx.description, tx.category, tx.source, tx.emergency ? 'TRUE' : 'FALSE', tx.memo || ''
+        ]);
+        const csv = [header, ...rows].map(row => row.map(csvCell).join(',')).join('\n');
+        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+        downloadBlob(blob, `家計管理履歴_${today()}.csv`);
+      }
+
+      function csvCell(value) {
+        const s = String(value ?? '');
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }
+
+      function downloadBlob(blob, fileName) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function importJSON(file) {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const parsed = JSON.parse(reader.result);
+            if (!parsed || !parsed.settings) throw new Error('Invalid data');
+            state = {
+              ...clone(defaultState),
+              ...parsed,
+              settings: { ...clone(defaultState).settings, ...(parsed.settings || {}) },
+              transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+              fixedCosts: Array.isArray(parsed.fixedCosts) ? parsed.fixedCosts : []
+            };
+            save();
+            render();
+            showMessage('復元しました', 'JSONバックアップからデータを復元しました。');
+          } catch (e) {
+            showMessage('復元できませんでした', 'JSONファイルの形式が違う可能性があります。');
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      function confirmResetAll() {
+        const text = prompt('全データを初期化します。実行する場合は「初期化」と入力してください。');
+        if (text !== '初期化') return;
+        state = clone(defaultState);
+        save();
+        resetForm();
+        render();
+        showMessage('初期化しました', '初期値に戻しました。');
+      }
+
+      function showMessage(title, body) {
+        byId('dialogTitle').textContent = title;
+        byId('dialogBody').innerHTML = body;
+        byId('messageDialog').showModal();
+      }
+
+      function bind() {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('section.view').forEach(v => v.classList.remove('active'));
+            btn.classList.add('active');
+            byId(btn.dataset.tab).classList.add('active');
+          });
+        });
+        byId('txForm').addEventListener('submit', addTransaction);
+        byId('description').addEventListener('input', () => {
+          if (!selectedQuick) applyAutoCategory();
+          else renderInputPreview();
+        });
+        ['amount', 'date', 'type', 'source', 'category', 'memo'].forEach(idName => byId(idName).addEventListener('input', renderInputPreview));
+        byId('historyMonth').addEventListener('input', renderHistory);
+        byId('historyCategory').addEventListener('change', renderHistory);
+        byId('viewForm').addEventListener('submit', saveViewSettings);
+        byId('assetForm').addEventListener('submit', saveAssetSettings);
+        byId('fixedForm').addEventListener('submit', addFixed);
+        byId('settingsForm').addEventListener('submit', saveBasicSettings);
+        byId('importFile').addEventListener('change', e => importJSON(e.target.files[0]));
+        ['githubToken', 'githubGistId', 'githubFileName', 'githubAutoSync'].forEach(idName => {
+          const el = byId(idName);
+          if (el) el.addEventListener('change', () => updateSyncStatus('warn', '同期設定に未保存の変更があります', '「同期設定を保存」を押してください'));
+        });
+      }
+
+      function init() {
+        bind();
+        const fixedDataRepaired = normalizeFixedCosts();
+        if (fixedDataRepaired) save();
+        byId('date').value = today();
+        byId('historyMonth').value = currentMonth();
+        fillSelects();
+        byId('source').value = state.settings.defaultSource || '普通預金';
+        byId('category').value = 'その他';
+        render();
+        setupAutoSync();
+      }
+
+      return {
+        init,
+        exportJSON,
+        exportCSV,
+        importJSON,
+        confirmResetAll,
+        deleteTransaction,
+        deleteFixed,
+        resetForm,
+        applyAutoCategory,
+        saveGitHubSyncSettings,
+        syncNow,
+        saveToGitHub,
+        loadFromGitHub,
+        createGitHubGist,
+        toggleGitHubTokenVisibility
+      };
+    })();
+
+    document.addEventListener('DOMContentLoaded', App.init);
+  </script>
+</body>
+</html>

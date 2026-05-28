@@ -215,13 +215,16 @@
     .field { display: grid; gap: .3rem; }
     .form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
     .form-row.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .form-row.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .form-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .9rem; }
+    .conditional-field[hidden] { display: none !important; }
 
     .quick-buttons { display: flex; flex-wrap: wrap; gap: .45rem; }
     .quick-buttons button { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; }
     .quick-buttons button:hover, .quick-buttons button.active { background: #4338ca; color: #fff; }
     .quick-buttons button.warn { background: var(--warn-bg); color: var(--warn); border-color: #fcd34d; }
     .quick-buttons button.warn:hover, .quick-buttons button.warn.active { background: #f59e0b; color: #111827; }
+    .action-buttons { display: flex; flex-wrap: wrap; gap: .35rem; }
 
     table { width: 100%; border-collapse: collapse; }
     th, td { padding: .7rem .55rem; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -230,6 +233,7 @@
     .table-wrap { overflow-x: auto; overflow-y: visible; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; }
     .table-wrap table { min-width: 760px; table-layout: fixed; }
     .table-wrap th, .table-wrap td { overflow-wrap: anywhere; word-break: break-word; }
+    #historyTable .table-wrap table { min-width: 980px; }
     #fixedTable .table-wrap table { min-width: 900px; }
     #fixedTable th:nth-child(1), #fixedTable td:nth-child(1) { width: 24%; }
     #fixedTable th:nth-child(2), #fixedTable td:nth-child(2) { width: 13%; }
@@ -287,7 +291,7 @@
 
     @media (max-width: 900px) {
       .grid.cols-4, .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; }
-      .form-row, .form-row.three { grid-template-columns: 1fr; }
+      .form-row, .form-row.three, .form-row.four { grid-template-columns: 1fr; }
       th { position: static; }
       .hero-actions { align-items: stretch; }
       .hero-actions button { flex: 1 1 auto; }
@@ -471,11 +475,11 @@
               </div>
 
               <div class="field" style="margin-top:.9rem;">
-                <label>分類ボタン</label>
+                <label>支出する口座</label>
                 <div class="quick-buttons" id="quickButtons"></div>
               </div>
 
-              <div class="form-row three" style="margin-top:.9rem;">
+              <div class="form-row four" style="margin-top:.9rem;">
                 <div class="field">
                   <label for="date">日付</label>
                   <input id="date" type="date" />
@@ -491,6 +495,13 @@
                 <div class="field">
                   <label for="source">支払元・入金先</label>
                   <select id="source"></select>
+                </div>
+                <div class="field conditional-field" id="viewPeriodField" hidden>
+                  <label for="viewPeriod">VIEWカード対象月</label>
+                  <select id="viewPeriod">
+                    <option value="当月分">当月分</option>
+                    <option value="翌月分">翌月分</option>
+                  </select>
                 </div>
               </div>
 
@@ -528,7 +539,7 @@
           <div class="split" style="align-items:center; flex-wrap:wrap;">
             <div>
               <h2>履歴一覧</h2>
-              <p class="muted small-text">入力した支出・収入・振替を確認します。不要な行は削除できます。</p>
+              <p class="muted small-text">入力した支出・収入・振替を確認します。必要な行は変更・削除できます。</p>
             </div>
             <div class="form-row" style="min-width:min(520px,100%);">
               <div class="field">
@@ -572,7 +583,7 @@
         </div>
         <div class="card" style="margin-top:1rem;">
           <h2>VIEWカード利用メモ</h2>
-          <p class="muted small-text">支払元を「VIEWカード」にして登録した支出です。普通預金からは即時には引かず、カード利用として集計します。</p>
+          <p class="muted small-text">支払元を「VIEWカード」にして登録した支出です。当月分と翌月分を分けて確認できます。</p>
           <div id="viewCardTxTable"></div>
         </div>
       </section>
@@ -592,7 +603,7 @@
                   <input id="ordinaryBase" type="number" min="0" step="1" />
                 </div>
                 <div class="field">
-                  <label for="savingsBase">貯金</label>
+                  <label for="savingsBase">貯蓄預金</label>
                   <input id="savingsBase" type="number" min="0" step="1" />
                 </div>
               </div>
@@ -784,7 +795,7 @@
           <div class="grid cols-3">
             <div class="notice"><strong>1. まず守る</strong>普通預金からVIEWカード引落額を確保します。</div>
             <div class="notice"><strong>2. 次に見る</strong>引落後の余剰から、通常使える趣味費を出します。</div>
-            <div class="notice"><strong>3. 最後に残す</strong>貯金と投資信託は原則守ります。崩す時は警告表示です。</div>
+            <div class="notice"><strong>3. 最後に残す</strong>貯蓄預金と投資信託は原則守ります。崩す時は警告表示です。</div>
           </div>
         </div>
       </section>
@@ -801,23 +812,77 @@
     </div>
   </dialog>
 
+  <dialog id="txEditDialog">
+    <div class="dialog-inner">
+      <h2>履歴を変更</h2>
+      <form id="txEditForm">
+        <input id="editTxId" type="hidden" />
+        <div class="form-row three">
+          <div class="field">
+            <label for="editDate">日付</label>
+            <input id="editDate" type="date" />
+          </div>
+          <div class="field">
+            <label for="editType">種別</label>
+            <select id="editType">
+              <option value="支出">支出</option>
+              <option value="収入">収入</option>
+              <option value="振替">振替</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="editAmount">金額</label>
+            <input id="editAmount" type="number" inputmode="numeric" min="0" step="1" required />
+          </div>
+        </div>
+        <div class="form-row" style="margin-top:.9rem;">
+          <div class="field">
+            <label for="editDescription">使途</label>
+            <input id="editDescription" type="text" required />
+          </div>
+          <div class="field">
+            <label for="editCategory">カテゴリ</label>
+            <select id="editCategory"></select>
+          </div>
+        </div>
+        <div class="form-row" style="margin-top:.9rem;">
+          <div class="field">
+            <label for="editSource">支払元・入金先</label>
+            <select id="editSource"></select>
+          </div>
+          <div class="field conditional-field" id="editViewPeriodField" hidden>
+            <label for="editViewPeriod">VIEWカード対象月</label>
+            <select id="editViewPeriod">
+              <option value="当月分">当月分</option>
+              <option value="翌月分">翌月分</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-top:.9rem;">
+          <label for="editMemo">メモ</label>
+          <input id="editMemo" type="text" />
+        </div>
+        <div class="form-actions">
+          <button type="submit">変更を保存</button>
+          <button type="button" class="secondary" onclick="document.getElementById('txEditDialog').close()">キャンセル</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
   <script>
     const App = (() => {
       const STORAGE_KEY = 'yuno_kakei_dashboard_v1';
       const SYNC_KEY = 'yuno_kakei_github_sync_v1';
+      const VIEW_SOURCE = 'VIEWカード';
+      const SAVINGS_SOURCE = '貯蓄預金';
+      const LEGACY_SAVINGS_SOURCE = '貯金';
       const categories = ['趣味・自己投資', '美容・服飾', '医療・体調管理', '日用品', '交通費', '自己投資', '固定費', 'VIEWカード', '仕送り', '収入', '貯金補填', 'その他'];
-      const sources = ['普通預金', '貯金', 'VIEWカード', '投資信託'];
+      const sources = ['普通預金', SAVINGS_SOURCE, VIEW_SOURCE, '投資信託'];
       const quicks = [
-        { label: '趣味', category: '趣味・自己投資', source: '普通預金' },
-        { label: '美容', category: '美容・服飾', source: '普通預金' },
-        { label: '医療', category: '医療・体調管理', source: '普通預金' },
-        { label: '日用品', category: '日用品', source: '普通預金' },
-        { label: '交通費', category: '交通費', source: '普通預金' },
-        { label: '自己投資', category: '自己投資', source: '普通預金' },
-        { label: '固定費', category: '固定費', source: '普通預金' },
-        { label: 'VIEWカード', category: 'VIEWカード', source: 'VIEWカード' },
-        { label: '仕送り', category: '仕送り', source: '普通預金' },
-        { label: '貯金から補填', category: '貯金補填', source: '貯金', emergency: true, warn: true }
+        { label: VIEW_SOURCE, source: VIEW_SOURCE },
+        { label: '普通預金', source: '普通預金' },
+        { label: SAVINGS_SOURCE, source: SAVINGS_SOURCE, emergency: true, warn: true }
       ];
       const keywordMap = [
         { category: '趣味・自己投資', words: ['amazon', 'アマゾン', '本', '漫画', 'マンガ', 'アプリ', '動画', 'kindle'] },
@@ -840,7 +905,7 @@
           hobbyLimit: 15000,
           investmentMonthly: 0,
           defaultSource: '普通預金',
-          userNote: '普通預金はVIEWカード引落を最優先。貯金は原則触らない。投信は動かさない。'
+          userNote: '普通預金はVIEWカード引落を最優先。貯蓄預金は原則触らない。投信は動かさない。'
         },
         transactions: [],
         fixedCosts: [],
@@ -870,6 +935,29 @@
       }
       function id() {
         return crypto?.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+      }
+      function isSavingsSource(source) {
+        return source === SAVINGS_SOURCE || source === LEGACY_SAVINGS_SOURCE;
+      }
+      function isViewSource(source) {
+        return source === VIEW_SOURCE || source === 'VIWEカード' || source === 'VIWE';
+      }
+      function normalizeSource(source) {
+        if (isSavingsSource(source)) return SAVINGS_SOURCE;
+        if (isViewSource(source)) return VIEW_SOURCE;
+        return source || '普通預金';
+      }
+      function normalizeViewPeriod(period) {
+        return period === '翌月分' ? '翌月分' : '当月分';
+      }
+      function sourceLabel(source) {
+        return normalizeSource(source);
+      }
+      function updateViewPeriodVisibility() {
+        const inputField = byId('viewPeriodField');
+        const editField = byId('editViewPeriodField');
+        if (inputField) inputField.hidden = !isViewSource(byId('source')?.value);
+        if (editField) editField.hidden = !isViewSource(byId('editSource')?.value);
       }
 
       function load() {
@@ -1202,6 +1290,8 @@
         let savings = Number(s.savingsBase || 0);
         let investment = Number(s.investmentBase || 0);
         let viewCardUsage = 0;
+        let viewCardCurrentUsage = 0;
+        let viewCardNextUsage = 0;
         let spentThisMonth = 0;
         let hobbySpent = 0;
         let ordinarySpentMonth = 0;
@@ -1213,27 +1303,33 @@
 
         for (const tx of state.transactions) {
           const amount = Number(tx.amount || 0);
+          const source = normalizeSource(tx.source);
           const txMonth = monthKey(tx.date);
           const isNow = txMonth === currentMonth();
 
           if (tx.type === '収入') {
-            if (tx.source === '貯金') savings += amount;
-            else if (tx.source === '投資信託') investment += amount;
+            if (isSavingsSource(source)) savings += amount;
+            else if (source === '投資信託') investment += amount;
             else ordinary += amount;
             if (isNow) incomeThisMonth += amount;
           } else if (tx.type === '振替') {
-            if (tx.source === '貯金') savings += amount;
+            if (isSavingsSource(source)) savings += amount;
             else ordinary += amount;
           } else {
-            if (tx.source === '貯金') savings -= amount;
-            else if (tx.source === '投資信託') investment -= amount;
-            else if (tx.source === 'VIEWカード') viewCardUsage += amount;
-            else ordinary -= amount;
+            if (isSavingsSource(source)) savings -= amount;
+            else if (source === '投資信託') investment -= amount;
+            else if (isViewSource(source)) {
+              viewCardUsage += amount;
+              if (normalizeViewPeriod(tx.viewPeriod) === '翌月分') viewCardNextUsage += amount;
+              else viewCardCurrentUsage += amount;
+            } else {
+              ordinary -= amount;
+            }
 
             if (isNow) {
               spentThisMonth += amount;
               catMonth[tx.category] = (catMonth[tx.category] || 0) + amount;
-              if (tx.source === '普通預金') ordinarySpentMonth += amount;
+              if (source === '普通預金') ordinarySpentMonth += amount;
               if (['趣味・自己投資', '自己投資'].includes(tx.category)) hobbySpent += amount;
             }
           }
@@ -1250,7 +1346,7 @@
         return {
           ordinary, savings, investment, totalAssets,
           viewAfter, normalHobbyAvailable, emergencyHobbyAvailable, savingsSupplement, sendCandidate,
-          viewCardUsage, spentThisMonth, hobbySpent, ordinarySpentMonth, incomeThisMonth,
+          viewCardUsage, viewCardCurrentUsage, viewCardNextUsage, spentThisMonth, hobbySpent, ordinarySpentMonth, incomeThisMonth,
           catMonth, fixedTotal, insuranceTotal
         };
       }
@@ -1290,18 +1386,19 @@
         renderReports();
         renderSettingsForms();
         renderGitHubSyncSettings();
+        updateViewPeriodVisibility();
       }
 
       function fillSelects() {
-        const sourceSelects = ['source', 'defaultSource'];
+        const sourceSelects = ['source', 'defaultSource', 'editSource'];
         for (const idName of sourceSelects) {
           const el = byId(idName);
           if (!el) continue;
-          const current = el.value || state.settings.defaultSource;
+          const current = normalizeSource(el.value || state.settings.defaultSource);
           el.innerHTML = sources.map(x => `<option value="${x}">${x}</option>`).join('');
-          el.value = current || '普通預金';
+          el.value = sources.includes(current) ? current : '普通預金';
         }
-        const categorySelects = ['category', 'historyCategory'];
+        const categorySelects = ['category', 'historyCategory', 'editCategory'];
         for (const idName of categorySelects) {
           const el = byId(idName);
           if (!el) continue;
@@ -1319,9 +1416,9 @@
             const q = quicks.find(x => x.label === btn.dataset.label);
             if (!q) return;
             selectedQuick = q;
-            byId('category').value = q.category;
             byId('source').value = q.source;
             byId('type').value = '支出';
+            updateViewPeriodVisibility();
             qb.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
             renderInputPreview();
           });
@@ -1340,15 +1437,17 @@
         const hobbyClass = c.normalHobbyAvailable > 0 ? 'ok' : (c.savingsSupplement > 0 ? 'warn' : 'bad');
         const summary = [
           { title: '普通預金', value: yen(c.ordinary), note: '日常決済用。VIEW引落を最優先', pill: '決済口座' },
-          { title: '貯金', value: yen(c.savings), note: '原則触らない。臨時・不足時のみ', pill: '守るお金' },
+          { title: '貯蓄預金', value: yen(c.savings), note: '原則触らない。臨時・不足時のみ', pill: '守るお金' },
           { title: '投資信託', value: yen(c.investment), note: '使えるお金に含めない', pill: '使用不可' },
-          { title: '総資産', value: yen(c.totalAssets), note: '普通預金＋貯金＋投信', pill: '全体' },
+          { title: '総資産', value: yen(c.totalAssets), note: '普通預金＋貯蓄預金＋投信', pill: '全体' },
           { title: 'VIEW引落予定', value: yen(s.viewDueAmount), note: `${s.viewDueDate} 引落予定`, pill: '最優先' },
           { title: '引落後の普通預金', value: yen(c.viewAfter), note: c.viewAfter >= 0 ? '引落対応OK' : '普通預金不足', pill: c.viewAfter >= 0 ? 'OK' : '不足', cls: viewClass },
           { title: '通常使える趣味費', value: yen(c.normalHobbyAvailable), note: '普通預金余剰の範囲', pill: '通常枠', cls: hobbyClass },
           { title: '臨時で最大使える趣味費', value: yen(c.emergencyHobbyAvailable), note: `月上限 ${yen(s.hobbyLimit)} まで`, pill: '上限枠' },
-          { title: '貯金から補う額', value: yen(c.savingsSupplement), note: c.savingsSupplement > 0 ? '使うなら臨時扱い' : '補填不要', pill: c.savingsSupplement > 0 ? '警告' : '不要', cls: c.savingsSupplement > 0 ? 'warn' : 'ok' },
+          { title: '貯蓄預金から補う額', value: yen(c.savingsSupplement), note: c.savingsSupplement > 0 ? '使うなら臨時扱い' : '補填不要', pill: c.savingsSupplement > 0 ? '警告' : '不要', cls: c.savingsSupplement > 0 ? 'warn' : 'ok' },
           { title: '仕送り候補', value: yen(c.sendCandidate), note: 'VIEWと通常趣味費を除いた余剰', pill: '候補' },
+          { title: 'VIEW当月分メモ', value: yen(c.viewCardCurrentUsage), note: '次回引落側として見る利用額', pill: '当月分' },
+          { title: 'VIEW翌月分メモ', value: yen(c.viewCardNextUsage), note: 'まだ確定前として分ける利用額', pill: '翌月分' },
           { title: '固定費合計', value: yen(c.fixedTotal), note: '登録済み固定費の合計', pill: '見直し対象' },
           { title: '保険料', value: yen(c.insuranceTotal), note: '保険分類の合計', pill: '確認対象' }
         ];
@@ -1367,7 +1466,7 @@
         if (c.normalHobbyAvailable > 0) {
           notices.push(`<div class="notice ok"><strong>普通預金内で趣味費を使える</strong>通常枠は ${yen(c.normalHobbyAvailable)} です。</div>`);
         } else if (c.emergencyHobbyAvailable > 0) {
-          notices.push(`<div class="notice warn"><strong>趣味費は貯金補填扱い</strong>月上限まで使う場合、最大 ${yen(c.savingsSupplement)} を貯金から補う計算です。</div>`);
+          notices.push(`<div class="notice warn"><strong>趣味費は貯蓄預金補填扱い</strong>月上限まで使う場合、最大 ${yen(c.savingsSupplement)} を貯蓄預金から補う計算です。</div>`);
         } else {
           notices.push(`<div class="notice bad"><strong>趣味費上限に到達</strong>今月の趣味・自己投資カテゴリが上限に達しています。</div>`);
         }
@@ -1412,41 +1511,52 @@
           byId('recentTransactions').innerHTML = '<div class="empty">まだ履歴がありません。かんたん入力から登録してください。</div>';
           return;
         }
-        byId('recentTransactions').innerHTML = recent.map(tx => `
+        byId('recentTransactions').innerHTML = recent.map(tx => {
+          const source = sourceLabel(tx.source);
+          const viewNote = isViewSource(source) ? `｜${normalizeViewPeriod(tx.viewPeriod)}` : '';
+          return `
           <div class="notice" style="margin-bottom:.55rem;">
             <div class="split"><strong>${escapeHtml(tx.description)}</strong><span class="${tx.type === '収入' ? 'amount-income' : 'amount-expense'}">${tx.type === '収入' ? '+' : '-'}${yen(tx.amount)}</span></div>
-            <div class="muted tiny">${tx.date}｜${tx.category}｜${tx.source}${tx.emergency ? '｜臨時' : ''}</div>
-          </div>
-        `).join('');
+            <div class="muted tiny">${tx.date}｜${tx.category}｜${source}${viewNote}${tx.emergency ? '｜臨時' : ''}</div>
+          </div>`;
+        }).join('');
       }
 
       function renderInputPreview() {
         const amount = Number(byId('amount')?.value || 0);
-        const source = byId('source')?.value || state.settings.defaultSource;
+        const source = normalizeSource(byId('source')?.value || state.settings.defaultSource);
         const category = byId('category')?.value || 'その他';
         const type = byId('type')?.value || '支出';
+        const viewPeriod = normalizeViewPeriod(byId('viewPeriod')?.value);
         const c = calc();
         let ordinary = c.ordinary;
         let savings = c.savings;
         let investment = c.investment;
         let viewUse = c.viewCardUsage;
+        let viewCurrent = c.viewCardCurrentUsage;
+        let viewNext = c.viewCardNextUsage;
         if (amount > 0) {
           if (type === '収入') {
-            if (source === '貯金') savings += amount;
+            if (isSavingsSource(source)) savings += amount;
             else if (source === '投資信託') investment += amount;
             else ordinary += amount;
           } else if (type === '支出') {
-            if (source === '貯金') savings -= amount;
+            if (isSavingsSource(source)) savings -= amount;
             else if (source === '投資信託') investment -= amount;
-            else if (source === 'VIEWカード') viewUse += amount;
-            else ordinary -= amount;
+            else if (isViewSource(source)) {
+              viewUse += amount;
+              if (viewPeriod === '翌月分') viewNext += amount;
+              else viewCurrent += amount;
+            } else {
+              ordinary -= amount;
+            }
           }
         }
         const viewAfter = ordinary - Number(state.settings.viewDueAmount || 0);
         let warning = '';
         if (source === '投資信託' && type === '支出') warning = '<div class="notice bad"><strong>投信は支出元にしない</strong>要件上、投資信託は動かせないお金です。</div>';
-        else if (source === '貯金' && type === '支出') warning = '<div class="notice warn"><strong>貯金を崩す入力です</strong>臨時・不足時だけにする扱いです。</div>';
-        else if (category === 'VIEWカード' || source === 'VIEWカード') warning = '<div class="notice"><strong>VIEWカード利用として登録</strong>普通預金からは今すぐ引かず、カード利用メモとして集計します。</div>';
+        else if (isSavingsSource(source) && type === '支出') warning = '<div class="notice warn"><strong>貯蓄預金を崩す入力です</strong>臨時・不足時だけにする扱いです。</div>';
+        else if (isViewSource(source)) warning = `<div class="notice"><strong>VIEWカード${viewPeriod}として登録</strong>普通預金からは今すぐ引かず、カード利用メモとして集計します。</div>`;
         else if (viewAfter < 0) warning = '<div class="notice bad"><strong>入力後、VIEW引落に不足します</strong>この支出は一度止めて確認した方が安全です。</div>';
         else warning = '<div class="notice ok"><strong>入力後も大きな問題なし</strong>VIEWカード引落後の残高は守れています。</div>';
 
@@ -1456,7 +1566,9 @@
           ${warning}
           <div class="notice"><strong>入力後の普通預金見込み</strong><span class="submoney">${yen(ordinary)}</span></div>
           <div class="notice"><strong>VIEW引落後の普通預金見込み</strong><span class="submoney">${yen(viewAfter)}</span></div>
-          <div class="notice"><strong>貯金見込み</strong><span class="submoney">${yen(savings)}</span></div>
+          <div class="notice"><strong>貯蓄預金見込み</strong><span class="submoney">${yen(savings)}</span></div>
+          <div class="notice"><strong>VIEWカード当月分メモ見込み</strong><span class="submoney">${yen(viewCurrent)}</span></div>
+          <div class="notice"><strong>VIEWカード翌月分メモ見込み</strong><span class="submoney">${yen(viewNext)}</span></div>
           <div class="notice"><strong>VIEWカード利用メモ合計</strong><span class="submoney">${yen(viewUse)}</span></div>
         `;
       }
@@ -1473,17 +1585,20 @@
         const desc = byId('description').value;
         const cat = autoCategory(desc);
         byId('category').value = cat;
-        if (cat === 'VIEWカード') byId('source').value = 'VIEWカード';
+        if (cat === 'VIEWカード') byId('source').value = VIEW_SOURCE;
+        updateViewPeriodVisibility();
         renderInputPreview();
       }
 
       function resetForm() {
         byId('txForm').reset();
         byId('date').value = today();
-        byId('source').value = state.settings.defaultSource || '普通預金';
+        byId('source').value = normalizeSource(state.settings.defaultSource || '普通預金');
         byId('category').value = 'その他';
+        byId('viewPeriod').value = '当月分';
         selectedQuick = null;
         document.querySelectorAll('#quickButtons button').forEach(b => b.classList.remove('active'));
+        updateViewPeriodVisibility();
         renderInputPreview();
       }
 
@@ -1492,7 +1607,7 @@
         const amount = num('amount');
         const description = byId('description').value.trim();
         if (!amount || amount <= 0 || !description) return showMessage('入力不足', '金額と使途を入力してください。');
-        const source = byId('source').value;
+        const source = normalizeSource(byId('source').value);
         const category = byId('category').value || autoCategory(description);
         const type = byId('type').value;
         if (type === '支出' && source === '投資信託') {
@@ -1507,8 +1622,9 @@
           description,
           category,
           source,
+          viewPeriod: isViewSource(source) ? normalizeViewPeriod(byId('viewPeriod').value) : '',
           memo: byId('memo').value.trim(),
-          emergency: selectedQuick?.emergency || source === '貯金',
+          emergency: type === '支出' && (selectedQuick?.emergency || isSavingsSource(source)),
           createdAt: new Date().toISOString()
         });
         save();
@@ -1529,18 +1645,69 @@
           return;
         }
         byId('historyTable').innerHTML = `<div class="table-wrap"><table>
-          <thead><tr><th>日付</th><th>種別</th><th>使途</th><th>カテゴリ</th><th>支払元</th><th class="right">金額</th><th>メモ</th><th class="no-print">操作</th></tr></thead>
-          <tbody>${rows.map(tx => `<tr>
+          <thead><tr><th>日付</th><th>種別</th><th>使途</th><th>カテゴリ</th><th>支払元</th><th>VIEW月</th><th class="right">金額</th><th>メモ</th><th class="no-print">操作</th></tr></thead>
+          <tbody>${rows.map(tx => {
+            const source = sourceLabel(tx.source);
+            const viewPeriod = isViewSource(source) ? `<span class="pill">${normalizeViewPeriod(tx.viewPeriod)}</span>` : '-';
+            return `<tr>
             <td>${tx.date}</td>
             <td>${tx.type}${tx.emergency ? '<br><span class="pill warn">臨時</span>' : ''}</td>
             <td>${escapeHtml(tx.description)}</td>
             <td>${tx.category}</td>
-            <td>${tx.source}</td>
+            <td>${source}</td>
+            <td>${viewPeriod}</td>
             <td class="right ${tx.type === '収入' ? 'amount-income' : 'amount-expense'}">${tx.type === '収入' ? '+' : '-'}${yen(tx.amount)}</td>
             <td>${escapeHtml(tx.memo || '')}</td>
-            <td class="no-print"><button class="small danger" type="button" onclick="App.deleteTransaction('${tx.id}')">削除</button></td>
-          </tr>`).join('')}</tbody>
+            <td class="no-print"><div class="action-buttons"><button class="small secondary" type="button" onclick="App.editTransaction('${tx.id}')">変更</button><button class="small danger" type="button" onclick="App.deleteTransaction('${tx.id}')">削除</button></div></td>
+          </tr>`;
+          }).join('')}</tbody>
         </table></div>`;
+      }
+
+      function editTransaction(txId) {
+        const tx = state.transactions.find(x => x.id === txId);
+        if (!tx) return;
+        byId('editTxId').value = tx.id;
+        byId('editDate').value = tx.date || today();
+        byId('editType').value = tx.type || '支出';
+        byId('editAmount').value = Number(tx.amount || 0);
+        byId('editDescription').value = tx.description || '';
+        byId('editCategory').value = tx.category || 'その他';
+        byId('editSource').value = normalizeSource(tx.source);
+        byId('editViewPeriod').value = normalizeViewPeriod(tx.viewPeriod);
+        byId('editMemo').value = tx.memo || '';
+        updateViewPeriodVisibility();
+        byId('txEditDialog').showModal();
+      }
+
+      function saveEditedTransaction(e) {
+        e.preventDefault();
+        const txId = byId('editTxId').value;
+        const tx = state.transactions.find(x => x.id === txId);
+        if (!tx) return;
+        const amount = num('editAmount');
+        const description = byId('editDescription').value.trim();
+        const source = normalizeSource(byId('editSource').value);
+        const type = byId('editType').value;
+        if (!amount || amount <= 0 || !description) return showMessage('入力不足', '金額と使途を入力してください。');
+        if (type === '支出' && source === '投資信託') {
+          showMessage('投資信託は使わない設定です', '投資信託は「動かせないお金」として扱う要件です。支払元を変更してください。');
+          return;
+        }
+        tx.date = byId('editDate').value || today();
+        tx.type = type;
+        tx.amount = amount;
+        tx.description = description;
+        tx.category = byId('editCategory').value || 'その他';
+        tx.source = source;
+        tx.viewPeriod = isViewSource(source) ? normalizeViewPeriod(byId('editViewPeriod').value) : '';
+        tx.memo = byId('editMemo').value.trim();
+        tx.emergency = type === '支出' && isSavingsSource(source);
+        tx.updatedAt = new Date().toISOString();
+        save();
+        byId('txEditDialog').close();
+        render();
+        showMessage('変更しました', `${escapeHtml(description)}：${yen(amount)} を更新しました。`);
       }
 
       function deleteTransaction(txId) {
@@ -1559,14 +1726,16 @@
           <div class="notice ${c.viewAfter >= 0 ? 'ok' : 'bad'}"><strong>引落判定</strong>${c.viewAfter >= 0 ? '普通預金で対応できます。' : '普通預金が不足しています。'}<br><span class="submoney">引落後：${yen(c.viewAfter)}</span></div>
           <div class="notice"><strong>次回引落日</strong>${s.viewDueDate}</div>
           <div class="notice"><strong>次回引落額</strong><span class="submoney">${yen(s.viewDueAmount)}</span></div>
-          <div class="notice"><strong>登録済みVIEWカード利用メモ</strong><span class="submoney">${yen(c.viewCardUsage)}</span></div>
+          <div class="notice"><strong>VIEWカード当月分メモ</strong><span class="submoney">${yen(c.viewCardCurrentUsage)}</span></div>
+          <div class="notice warn"><strong>VIEWカード翌月分メモ</strong><span class="submoney">${yen(c.viewCardNextUsage)}</span><br><span class="small-text">まだ確定していない使用額として分けています。</span></div>
+          <div class="notice"><strong>登録済みVIEWカード利用メモ合計</strong><span class="submoney">${yen(c.viewCardUsage)}</span></div>
         `;
         byId('viewDueDate').value = s.viewDueDate;
         byId('viewDueAmount').value = s.viewDueAmount;
-        const rows = state.transactions.filter(tx => tx.source === 'VIEWカード').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        const rows = state.transactions.filter(tx => isViewSource(tx.source)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
         byId('viewCardTxTable').innerHTML = rows.length ? `<div class="table-wrap"><table>
-          <thead><tr><th>日付</th><th>使途</th><th>カテゴリ</th><th class="right">金額</th><th>メモ</th></tr></thead>
-          <tbody>${rows.map(tx => `<tr><td>${tx.date}</td><td>${escapeHtml(tx.description)}</td><td>${tx.category}</td><td class="right amount-expense">${yen(tx.amount)}</td><td>${escapeHtml(tx.memo || '')}</td></tr>`).join('')}</tbody>
+          <thead><tr><th>日付</th><th>対象月</th><th>使途</th><th>カテゴリ</th><th class="right">金額</th><th>メモ</th></tr></thead>
+          <tbody>${rows.map(tx => `<tr><td>${tx.date}</td><td><span class="pill ${normalizeViewPeriod(tx.viewPeriod) === '翌月分' ? 'warn' : ''}">${normalizeViewPeriod(tx.viewPeriod)}</span></td><td>${escapeHtml(tx.description)}</td><td>${tx.category}</td><td class="right amount-expense">${yen(tx.amount)}</td><td>${escapeHtml(tx.memo || '')}</td></tr>`).join('')}</tbody>
         </table></div>` : '<div class="empty">VIEWカード利用メモはまだありません。</div>';
       }
 
@@ -1583,7 +1752,7 @@
         const c = calc();
         byId('assetPanel').innerHTML = `
           <div class="notice"><strong>普通預金</strong><span class="submoney">${yen(c.ordinary)}</span><br><span class="muted">VIEWカード引落を最優先で確保</span></div>
-          <div class="notice"><strong>貯金</strong><span class="submoney">${yen(c.savings)}</span><br><span class="muted">原則触らない</span></div>
+          <div class="notice"><strong>貯蓄預金</strong><span class="submoney">${yen(c.savings)}</span><br><span class="muted">原則触らない</span></div>
           <div class="notice"><strong>投資信託</strong><span class="submoney">${yen(c.investment)}</span><br><span class="muted">使えるお金に含めない</span></div>
           <div class="notice"><strong>総資産</strong><span class="submoney">${yen(c.totalAssets)}</span></div>
         `;
@@ -1601,7 +1770,7 @@
         state.settings.investmentMonthly = num('investmentMonthly');
         save();
         render();
-        showMessage('資産設定を保存しました', '普通預金・貯金・投信の初期値を更新しました。');
+        showMessage('資産設定を保存しました', '普通預金・貯蓄預金・投信の初期値を更新しました。');
       }
 
       function renderFixed() {
@@ -1687,14 +1856,14 @@
 
       function renderSettingsForms() {
         byId('hobbyLimit').value = state.settings.hobbyLimit;
-        byId('defaultSource').value = state.settings.defaultSource || '普通預金';
+        byId('defaultSource').value = normalizeSource(state.settings.defaultSource || '普通預金');
         byId('userNote').value = state.settings.userNote || '';
       }
 
       function saveBasicSettings(e) {
         e.preventDefault();
         state.settings.hobbyLimit = num('hobbyLimit');
-        state.settings.defaultSource = byId('defaultSource').value;
+        state.settings.defaultSource = normalizeSource(byId('defaultSource').value);
         state.settings.userNote = byId('userNote').value.trim();
         save();
         resetForm();
@@ -1708,9 +1877,9 @@
       }
 
       function exportCSV() {
-        const header = ['日付', '種別', '金額', '使途', 'カテゴリ', '支払元', '臨時', 'メモ'];
+        const header = ['日付', '種別', '金額', '使途', 'カテゴリ', '支払元', 'VIEWカード対象月', '臨時', 'メモ'];
         const rows = state.transactions.map(tx => [
-          tx.date, tx.type, tx.amount, tx.description, tx.category, tx.source, tx.emergency ? 'TRUE' : 'FALSE', tx.memo || ''
+          tx.date, tx.type, tx.amount, tx.description, tx.category, sourceLabel(tx.source), isViewSource(tx.source) ? normalizeViewPeriod(tx.viewPeriod) : '', tx.emergency ? 'TRUE' : 'FALSE', tx.memo || ''
         ]);
         const csv = [header, ...rows].map(row => row.map(csvCell).join(',')).join('\n');
         const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
@@ -1783,13 +1952,16 @@
           });
         });
         byId('txForm').addEventListener('submit', addTransaction);
-        byId('description').addEventListener('input', () => {
-          if (!selectedQuick) applyAutoCategory();
-          else renderInputPreview();
+        byId('description').addEventListener('input', applyAutoCategory);
+        ['amount', 'date', 'type', 'category', 'memo', 'viewPeriod'].forEach(idName => byId(idName).addEventListener('input', renderInputPreview));
+        byId('source').addEventListener('input', () => {
+          updateViewPeriodVisibility();
+          renderInputPreview();
         });
-        ['amount', 'date', 'type', 'source', 'category', 'memo'].forEach(idName => byId(idName).addEventListener('input', renderInputPreview));
         byId('historyMonth').addEventListener('input', renderHistory);
         byId('historyCategory').addEventListener('change', renderHistory);
+        byId('txEditForm').addEventListener('submit', saveEditedTransaction);
+        byId('editSource').addEventListener('change', updateViewPeriodVisibility);
         byId('viewForm').addEventListener('submit', saveViewSettings);
         byId('assetForm').addEventListener('submit', saveAssetSettings);
         byId('fixedForm').addEventListener('submit', addFixed);
@@ -1808,8 +1980,10 @@
         byId('date').value = today();
         byId('historyMonth').value = currentMonth();
         fillSelects();
-        byId('source').value = state.settings.defaultSource || '普通預金';
+        byId('source').value = normalizeSource(state.settings.defaultSource || '普通預金');
         byId('category').value = 'その他';
+        byId('viewPeriod').value = '当月分';
+        updateViewPeriodVisibility();
         render();
         setupAutoSync();
       }
@@ -1820,6 +1994,7 @@
         exportCSV,
         importJSON,
         confirmResetAll,
+        editTransaction,
         deleteTransaction,
         deleteFixed,
         resetForm,
